@@ -50,6 +50,18 @@ func run() -> void:
 		await process_frame
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://art/previews/micro_gameplay.png")
+	arena.queue_free()
+	await process_frame
+	var final_intro=load("res://scenes/laboratory_intro.tscn").instantiate()
+	root.add_child(final_intro)
+	current_scene=final_intro
+	final_intro.set_process(false)
+	final_intro.seek(7.2)
+	for i in range(4): final_intro.dialogue.advance()
+	final_intro.seek(final_intro.sequence_start+final_intro.FADE_START+final_intro.FADE_DURATION+0.1)
+	await process_frame
+	await process_frame
+	check(current_scene!=null and current_scene.is_in_group("arena"),"Final fade must launch playable arena")
 	if failures.is_empty(): print("PASS: joint running, sleep, combat, one hit per swing, down/revive, cooperative bridge")
 	else:
 		for failure in failures: push_error(failure)

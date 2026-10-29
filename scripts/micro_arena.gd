@@ -77,7 +77,7 @@ func interact(player, dt: float) -> void:
 	if built or pieces<8 or player.position.distance_to(Vector2(540,250))>62: return
 	var partner=players[1] if player==players[0] else players[0]
 	if partner.position.distance_to(Vector2(540,250))<85 and not partner.down:
-		build_progress+=dt
+		build_progress=minf(2.0,build_progress+dt)
 		if build_progress>=2:
 			built=true
 			pieces-=8
