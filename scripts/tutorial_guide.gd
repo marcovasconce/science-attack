@@ -1,5 +1,5 @@
 extends Node
-## Local guide AI: follows the team and teaches through observed actions.
+## Remote communicator: observes the team without a physical world entity.
 var step := 0
 var age := 0.0
 var action_done := false
@@ -8,11 +8,10 @@ var start_position := Vector2.ZERO
 var hit_germ := false
 var next_delay := 0.0
 @onready var arena = get_parent()
-@onready var guide: Node2D = $"../Actors/BlueAssistant"
-@onready var bubble: Control = guide.get_node("Bubble")
+@onready var bubble: Control = $"../HUD/Communicator"
 @onready var message: Label = bubble.get_node("Message")
 @onready var key: Label = bubble.get_node("Key")
-const MESSAGES = ["", "Venha comigo!", "Vamos pular!", "Desvie!", "Quebre a caixa!", "Acerte o germe!", "Vamos montar juntos!", "Agora é com vocês!"]
+const MESSAGES = ["", "Vamos andar!", "Vamos pular!", "Desvie!", "Quebre a caixa!", "Acerte o germe!", "Vamos montar juntos!", "Agora é com vocês!"]
 const KEYS = ["", "W A S D", "ESPAÇO", "SHIFT", "F", "F", "E • segurar", ""]
 func begin() -> void:
 	arena.controls_locked=true
@@ -34,7 +33,7 @@ func _process(dt: float) -> void:
 	if step==4 or (step==6 and arena.pieces<8):
 		marker.visible=false
 		for crate in arena.get_node("Breakables").get_children():
-			if crate.visible and crate.position.x<570:
+			if not crate.broken and crate.position.x<570:
 				marker.position=crate.position+Vector2(0,-58)
 				marker.visible=true
 				break
@@ -44,17 +43,6 @@ func _process(dt: float) -> void:
 	if step==6 and arena.pieces>=8: marker.position=Vector2(540,150)
 	marker.position.y+=sin(age*4)*4
 	var leader=arena.players[0]
-	var destination: Vector2=leader.position+Vector2(70,-24)
-	if step==1: destination=Vector2(290,235)
-	if step==4: destination=Vector2(450,220)
-	if step==6: destination=Vector2(540,230)
-	if step==7: destination=leader.position+Vector2(-60,-30)
-	var offset: Vector2=destination-guide.position
-	guide.position=guide.position.move_toward(destination,dt*105) if offset.length()>8 else guide.position
-	var sprite: AnimatedSprite2D=guide.get_node("AnimatedSprite2D")
-	sprite.play("run" if offset.length()>10 else "idle")
-	sprite.flip_h=offset.x<0
-	bubble.position.x=clampf(-105,arena.get_node("Camera2D").position.x-310-guide.position.x,arena.get_node("Camera2D").position.x+100-guide.position.x)
 	bubble.visible=step<7 or age<3.0
 	message.text=MESSAGES[step]
 	key.text=KEYS[step]

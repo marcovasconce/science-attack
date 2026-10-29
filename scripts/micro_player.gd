@@ -84,7 +84,14 @@ func _physics_process(dt: float) -> void:
 	if attack_time>0: speed*=0.25
 	if stun>0: speed=0
 	velocity = direction * Vector2(speed,speed*0.66)
+	set_collision_mask_value(4,jump_height<20)
 	move_and_slide()
+	var pushing := false
+	for index in get_slide_collision_count():
+		var body=get_slide_collision(index).get_collider()
+		if body is RigidBody2D and not body.freeze:
+			body.apply_central_force(direction*450)
+			pushing=direction.length()>0.1
 	if velocity.length()>5: arena.tutorial.record_action("move", self)
 	position.x=clampf(position.x,20,arena.open_limit)
 	position.y=clampf(position.y,190,326)
@@ -97,6 +104,7 @@ func _physics_process(dt: float) -> void:
 			start_attack()
 	var animation := "idle"
 	if velocity.length()>5: animation="run"
+	if pushing: animation="push"
 	if jump_height>0: animation="jump"
 	if attack_time>0: animation="heavy" if combo==3 else "attack"
 	if stun>0: animation="hurt"

@@ -1,5 +1,14 @@
 # Assets utilizados
 
+## Estágio cartoon atual
+
+- Piso, paredes, tubulações, amostras, caixas, terminal, barreiras e setas: Platformer Pack Industrial, Kenney Vleugels, CC0. https://kenney.nl/assets/platformer-pack-industrial
+- Germes: Random Germs/Amoeba Sprites, ChiliGames, opção CC0 oferecida pelo autor. https://opengameart.org/content/random-germsamoeba-sprites
+- Os originais, inclusive a licença da Kenney, estão em `cartoon/`. `cartoon_tiles.png` contém apenas cópias redimensionadas dos tiles prontos 029, 030, 057 e 095. As imagens originais foram preservadas. Os germes usam regiões do PNG original, sem redesenho.
+- O assistente existe apenas no comunicador do HUD. O retrato continua sendo Dude Monster, do pacote AVATAR fornecido pelo usuário.
+
+## Assets das versões anteriores
+
 - Laboratório: Warped Top-Down Tech Lab 2, Luis Zuno / Ansimuz, CC0. https://opengameart.org/content/warped-top-down-tech-lab-2
 - Frascos: Sci-Fi Platformer Tileset [16x16], RottingPixels, CC0. https://opengameart.org/content/2d-sci-fi-platformer-tileset-16x16
 - Caixas: Wooded Crate, GrumpyDiamond, CC0. https://opengameart.org/content/wooded-crate

@@ -1,0 +1,91 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/cartoon_crate.gd" id="1_pggtb"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_057.png" id="2_i78fu"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ft53k"]
+friction = 0.65
+bounce = 0.12
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_k1ddd"]
+size = Vector2(33, 15)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7uth0"]
+atlas = ExtResource("2_i78fu")
+region = Rect2(0, 0, 35, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gbjid"]
+size = Vector2(12, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_03yoe"]
+atlas = ExtResource("2_i78fu")
+region = Rect2(35, 0, 35, 70)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_sqo08"]
+size = Vector2(12, 8)
+
+[node name="CartoonCrate" type="RigidBody2D" unique_id=1213208239]
+collision_layer = 8
+collision_mask = 11
+mass = 1.5
+physics_material_override = SubResource("PhysicsMaterial_ft53k")
+gravity_scale = 0.0
+lock_rotation = true
+contact_monitor = true
+max_contacts_reported = 4
+linear_damp = 9.0
+script = ExtResource("1_pggtb")
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=555391722]
+texture_filter = 2
+position = Vector2(0, -18)
+scale = Vector2(0.58, 0.58)
+texture = ExtResource("2_i78fu")
+
+[node name="Feet" type="CollisionShape2D" parent="." unique_id=1533593958]
+position = Vector2(0, -2)
+shape = SubResource("RectangleShape2D_k1ddd")
+
+[node name="Health" type="ProgressBar" parent="." unique_id=882486551]
+visible = false
+offset_left = -18.0
+offset_top = -47.0
+offset_right = 18.0
+offset_bottom = -20.0
+max_value = 32.0
+value = 32.0
+show_percentage = false
+
+[node name="Debris" type="Node2D" parent="." unique_id=1048819128]
+
+[node name="Left" type="RigidBody2D" parent="Debris" unique_id=1184938749]
+visible = false
+position = Vector2(-8, -10)
+collision_layer = 0
+gravity_scale = 0.0
+freeze = true
+linear_damp = 4.0
+
+[node name="Fragment" type="Sprite2D" parent="Debris/Left" unique_id=775075330]
+texture_filter = 2
+scale = Vector2(0.5714286, 0.5714286)
+texture = SubResource("AtlasTexture_7uth0")
+
+[node name="Collision" type="CollisionShape2D" parent="Debris/Left" unique_id=1486788500]
+shape = SubResource("RectangleShape2D_gbjid")
+
+[node name="Right" type="RigidBody2D" parent="Debris" unique_id=2109406440]
+visible = false
+position = Vector2(8, -10)
+collision_layer = 0
+gravity_scale = 0.0
+freeze = true
+linear_damp = 4.0
+
+[node name="Fragment" type="Sprite2D" parent="Debris/Right" unique_id=719792544]
+texture_filter = 2
+scale = Vector2(0.5714286, 0.5714286)
+texture = SubResource("AtlasTexture_03yoe")
+
+[node name="Collision" type="CollisionShape2D" parent="Debris/Right" unique_id=894834533]
+shape = SubResource("RectangleShape2D_sqo08")

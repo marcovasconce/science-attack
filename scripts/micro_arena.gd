@@ -58,14 +58,11 @@ func strike(player, combo: int, targets: Array) -> void:
 			$Camera2D.offset=Vector2(3,-2)
 	if tutorial.step<4: return
 	for prop in $Breakables.get_children():
-		if not prop.visible or prop in targets: continue
+		if prop.broken or prop in targets: continue
 		var offset: Vector2=prop.position-player.position
 		if absf(offset.y)<24 and offset.x*player.facing>-10 and offset.x*player.facing<65:
 			targets.append(prop)
-			prop.visible=false
-			pieces+=3
-			tutorial.record_action("crate", player)
-			effects.append({"p":prop.position+Vector2(0,-18),"t":0.3})
+			prop.take_hit(28 if combo==3 else 18,player.facing,player)
 func germ_defeated(at: Vector2) -> void:
 	defeated+=1
 	pieces+=2
@@ -90,6 +87,7 @@ func interact(player, dt: float) -> void:
 			open_limit=1230
 			$Bridge.visible=true
 			$Gate.visible=false
+			$Gate/Collision.set_deferred("disabled",true)
 			spawn_wave()
 func _process(dt: float) -> void:
 	if Input.is_action_just_pressed("controls"):

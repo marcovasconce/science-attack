@@ -16,6 +16,8 @@ func _physics_process(dt: float) -> void:
 	var offset: Vector2=target.position-position
 	velocity=offset.normalized()*Vector2(speed,speed*0.65) if offset.length()>28 and stun<=0 else Vector2.ZERO
 	move_and_slide()
+	position.y=clampf(position.y,192,325)
+	$Body/Sprite.flip_h=offset.x<0
 	$Body.scale=Vector2(1+sin(phase*6)*0.06,1-sin(phase*6)*0.06)
 	$Body.modulate=Color(2,2,2) if stun>0 else Color.WHITE
 	if absf(offset.x)<33 and absf(offset.y)<16 and cooldown<=0 and stun<=0:
