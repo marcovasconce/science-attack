@@ -1,0 +1,77 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="science attack"
+run/main_scene="res://scenes/laboratory_intro.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="viewport"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.015, 0.025, 0.05, 1)
+
+[input]
+
+p0_left={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":65)]}
+
+p0_right={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":68)]}
+
+p0_up={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":87)]}
+
+p0_down={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":83)]}
+
+p0_attack={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":70)]}
+
+p0_jump={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":71)]}
+
+p0_dodge={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":72)]}
+
+p0_interact={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":69)]}
+
+p0_run={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194325)]}
+
+p1_left={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194321)]}
+
+p1_right={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194323)]}
+
+p1_up={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194320)]}
+
+p1_down={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194322)]}
+
+p1_attack={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":75)]}
+
+p1_jump={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":76)]}
+
+p1_dodge={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":59)]}
+
+p1_interact={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":79)]}
+
+p1_run={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194326)]}
+
+join={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":4194333)]}
+
+restart={"deadzone": 0.2, "events": [Object(InputEventKey,"physical_keycode":82)]}

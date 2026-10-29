@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3]
+[ext_resource type="Script" path="res://scripts/germ.gd" id="1"]
+[sub_resource type="CircleShape2D" id="shape"]
+radius=10.0
+[node name="Germ" type="CharacterBody2D" groups=["germs"]]
+script=ExtResource("1")
+collision_layer=4
+collision_mask=1
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape=SubResource("shape")
+[node name="Shadow" type="Polygon2D" parent="."]
+polygon=PackedVector2Array(-15,0,-8,-4,8,-4,15,0,8,4,-8,4)
+color=Color(0,0.03,0.05,0.4)
+[node name="Body" type="Node2D" parent="."]
+position=Vector2(0,-18)
+[node name="Membrane" type="Polygon2D" parent="Body"]
+polygon=PackedVector2Array(-20,-6,-15,-10,-19,-18,-10,-15,-4,-23,2,-17,12,-20,12,-12,23,-8,18,-2,24,6,15,9,12,17,3,14,-5,20,-10,13,-20,12,-16,4,-24,0)
+color=Color(0.15,0.35,0.18,1)
+[node name="Core" type="Polygon2D" parent="Body"]
+polygon=PackedVector2Array(-15,-8,-8,-15,8,-15,16,-7,17,7,8,13,-8,13,-17,4)
+color=Color(0.55,0.85,0.22,1)
+[node name="EyeLeft" type="Polygon2D" parent="Body"]
+polygon=PackedVector2Array(-10,-8,-4,-6,-4,0,-10,0)
+color=Color(0.04,0.08,0.12,1)
+[node name="EyeRight" type="Polygon2D" parent="Body"]
+polygon=PackedVector2Array(4,-6,10,-8,10,0,4,0)
+color=Color(0.04,0.08,0.12,1)
+[node name="Health" type="ProgressBar" parent="."]
+offset_left=-18.0
+offset_top=-47.0
+offset_right=18.0
+offset_bottom=-44.0
+max_value=65.0
+value=65.0
+show_percentage=false

@@ -1,0 +1,71 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/laboratory_intro.gd" id="1_intro"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/laboratory.png" id="2_lab"]
+
+[ext_resource type="Script" path="res://scripts/cutscene_actor.gd" id="3_actor"]
+[ext_resource type="Script" path="res://scripts/sleep_sequence.gd" id="4_sleep"]
+
+[ext_resource type="Script" path="res://scripts/intro_dialogue.gd" id="5_dialogue"]
+[ext_resource type="Script" path="res://scripts/laboratory_foreground.gd" id="6_front"]
+
+[node name="LaboratoryIntro" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1_intro")
+
+[node name="Laboratory" type="Sprite2D" parent="."]
+texture = ExtResource("2_lab")
+centered = false
+scale = Vector2(0.38277512, 0.38257173)
+
+[node name="DrMax" type="Node2D" parent="."]
+script = ExtResource("3_actor")
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="DrMax"]
+[node name="DrAmanda" type="Node2D" parent="."]
+script = ExtResource("3_actor")
+[node name="AnimatedSprite" type="AnimatedSprite2D" parent="DrAmanda"]
+[node name="SleepSequence" type="Node2D" parent="."]
+script = ExtResource("4_sleep")
+[node name="MaxDream" type="Label" parent="SleepSequence"]
+offset_left=337.0
+offset_top=125.0
+text="Z z"
+[node name="AmandaDream" type="Label" parent="SleepSequence"]
+offset_left=393.0
+offset_top=125.0
+text="Z z"
+[node name="ConversationCamera" type="Camera2D" parent="."]
+position=Vector2(320,180)
+
+[node name="AnimatedMonitors" type="Node2D" parent="."]
+[node name="ForegroundRailings" type="Node2D" parent="."]
+script=ExtResource("6_front")
+[node name="GreenPulse" type="Node2D" parent="SleepSequence"]
+[node name="DrMaxInside" type="Sprite2D" parent="SleepSequence"]
+[node name="DrAmandaInside" type="Sprite2D" parent="SleepSequence"]
+[node name="GlassInFrontOfScientists" type="Node2D" parent="SleepSequence"]
+[node name="CinematicOverlay" type="CanvasLayer" parent="."]
+[node name="RedAlarm" type="ColorRect" parent="CinematicOverlay"]
+offset_right=640.0
+offset_bottom=360.0
+mouse_filter=2
+[node name="Pause" type="Label" parent="CinematicOverlay"]
+visible=false
+offset_left=278.0
+offset_top=187.0
+text="PAUSADO"
+[node name="DialogueLayer" type="CanvasLayer" parent="."]
+layer=5
+[node name="IntroDialogue" type="Control" parent="DialogueLayer"]
+script=ExtResource("5_dialogue")
+[node name="SpeakingPortrait" type="TextureRect" parent="DialogueLayer/IntroDialogue"]
+[node name="Speaker" type="Label" parent="DialogueLayer/IntroDialogue"]
+[node name="Speech" type="Label" parent="DialogueLayer/IntroDialogue"]
+[node name="ContinueHint" type="Label" parent="DialogueLayer/IntroDialogue"]
+[node name="EndingFade" type="CanvasLayer" parent="."]
+layer=100
+[node name="Black" type="ColorRect" parent="EndingFade"]
+offset_right=640.0
+offset_bottom=360.0
+color=Color(0,0,0,0)
+mouse_filter=2
