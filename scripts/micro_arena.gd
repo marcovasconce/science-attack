@@ -1,6 +1,8 @@
 extends Node2D
 const GermScene = preload("res://scenes/actors/germ.tscn")
 var players: Array = []
+var controls_locked := true
+@onready var tutorial = $Tutorial
 var open_limit := 570.0
 var wave := 0
 var defeated := 0
@@ -16,7 +18,7 @@ var effects: Array = []
 func _ready() -> void:
 	players=[$Actors/MaxAvatar,$Actors/AmandaAvatar]
 	players[1].sprite.sprite_frames=preload("res://assets/avatars/Pink_Monster.tres")
-	spawn_wave()
+	tutorial.begin()
 func nearest_enemy(at: Vector2):
 	var best=null
 	var distance=INF
@@ -47,12 +49,14 @@ func strike(player, combo: int, targets: Array) -> void:
 		if absf(offset.y)<22 and offset.x*player.facing>-12 and offset.x*player.facing<65:
 			targets.append(enemy)
 			var assisted: bool=players[0].attack_time>0 and players[1].attack_time>0 and players[0].position.distance_to(players[1].position)<100
+			tutorial.record_action("germ", player)
 			enemy.take_hit((28 if combo==3 else 18)+(15 if assisted else 0),player.facing)
 			combo_hits+=1
 			combo_timer=2
 			player.energy=minf(100,player.energy+8)
 			effects.append({"p":enemy.position+Vector2(0,-20),"t":0.2})
 			$Camera2D.offset=Vector2(3,-2)
+	if tutorial.step<4: return
 	for prop in $Breakables.get_children():
 		if not prop.visible or prop in targets: continue
 		var offset: Vector2=prop.position-player.position
@@ -60,6 +64,7 @@ func strike(player, combo: int, targets: Array) -> void:
 			targets.append(prop)
 			prop.visible=false
 			pieces+=3
+			tutorial.record_action("crate", player)
 			effects.append({"p":prop.position+Vector2(0,-18),"t":0.3})
 func germ_defeated(at: Vector2) -> void:
 	defeated+=1
@@ -74,6 +79,7 @@ func interact(player, dt: float) -> void:
 				other.hp=50
 				other.invulnerable=2
 				other.revive_progress=0
+	if tutorial.step<6: return
 	if built or pieces<8 or player.position.distance_to(Vector2(540,250))>62: return
 	var partner=players[1] if player==players[0] else players[0]
 	if partner.position.distance_to(Vector2(540,250))<85 and not partner.down:
@@ -86,6 +92,9 @@ func interact(player, dt: float) -> void:
 			$Gate.visible=false
 			spawn_wave()
 func _process(dt: float) -> void:
+	if Input.is_action_just_pressed("controls"):
+		$HUD/ControlsPanel.visible=not $HUD/ControlsPanel.visible
+		controls_locked=$HUD/ControlsPanel.visible or tutorial.step==0
 	if Input.is_action_just_pressed("join"):
 		players[1].ai_controlled=not players[1].ai_controlled
 	if Input.is_action_just_pressed("restart"): get_tree().reload_current_scene()
@@ -99,10 +108,10 @@ func _process(dt: float) -> void:
 	$HUD/P1.value=players[0].hp
 	$HUD/P2.value=players[1].hp
 	$HUD/Combo.text="%d HITS" % combo_hits if combo_hits>1 else ""
-	if defeated>=9 and built and get_tree().get_nodes_in_group("germs").is_empty(): victory=true
-	status.text="SETOR LIMPO!  •  R para repetir" if victory else ("AVANCEM!  →  Eliminem os germes" if built else "Quebrem caixas • 8 peças + dupla no terminal [E / O]")
-	if players[0].down and players[1].down: status.text="CONEXÃO PERDIDA • R para tentar novamente"
-	$HUD/Pieces.text="PEÇAS %02d   |   COOP %d%%" % [pieces,int(build_progress/2*100)]
+	if defeated>=6 and built and get_tree().get_nodes_in_group("germs").is_empty(): victory=true
+	status.text="✓" if victory else ""
+	if players[0].down and players[1].down: status.text="R  ↻"
+	$HUD/Pieces.text="◆ %02d" % pieces if tutorial.step>=4 else ""
 	for fx in effects: fx.t-=dt
 	effects=effects.filter(func(fx): return fx.t>0)
 	queue_redraw()

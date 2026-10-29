@@ -20,3 +20,5 @@ def frames(prefix,folder):
  out+=subs+['[resource]\nanimations = ['+',\n'.join(entries)+']']
  (root/f'assets/avatars/{folder}.tres').write_text('\n\n'.join(out),encoding='utf8')
 frames('Owlet_Monster','Owlet_Monster'); frames('Pink_Monster','Pink_Monster')
+
+frames('Dude_Monster','Dude_Monster')

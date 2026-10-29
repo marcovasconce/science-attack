@@ -7,7 +7,7 @@ var dead := false
 var phase := 0.0
 @onready var arena = get_tree().get_first_node_in_group("arena")
 func _physics_process(dt: float) -> void:
-	if dead: return
+	if dead or arena.controls_locked: return
 	phase+=dt
 	stun=maxf(0,stun-dt)
 	cooldown-=dt
@@ -19,7 +19,7 @@ func _physics_process(dt: float) -> void:
 	$Body.scale=Vector2(1+sin(phase*6)*0.06,1-sin(phase*6)*0.06)
 	$Body.modulate=Color(2,2,2) if stun>0 else Color.WHITE
 	if absf(offset.x)<33 and absf(offset.y)<16 and cooldown<=0 and stun<=0:
-		target.take_hit(10,position)
+		target.take_hit(4 if arena.tutorial.step<7 else 10,position)
 		cooldown=1.25
 	$Health.value=hp
 func take_hit(damage: int, direction: float) -> void:

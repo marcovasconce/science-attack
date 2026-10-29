@@ -17,15 +17,21 @@ var jump_speed := 0.0
 var dash := 0.0
 var down := false
 var revive_progress := 0.0
-var energy := 0.0
+var energy := 100.0
 var ai_clock := 0.0
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var arena = get_tree().get_first_node_in_group("arena")
+
+func _ready() -> void:
+	$PlayerMarker.text="P%d" % (player_id+1) if not ai_controlled else "IA"
 
 func _physics_process(dt: float) -> void:
 	invulnerable = maxf(0, invulnerable-dt)
 	stun = maxf(0, stun-dt)
 	ai_clock += dt
+	if arena.controls_locked:
+		velocity=Vector2.ZERO
+		return
 	var prefix := "p%d_" % player_id
 	var direction := Input.get_vector(prefix+"left",prefix+"right",prefix+"up",prefix+"down")
 	var attack := Input.is_action_just_pressed(prefix+"attack")
@@ -37,7 +43,7 @@ func _physics_process(dt: float) -> void:
 		var destination: Vector2 = arena.players[0].position + Vector2(36,20)
 		if target != null:
 			destination = target.position - Vector2(28 * signf(target.position.x-position.x),0)
-			attack = absf(target.position.x-position.x)<58 and absf(target.position.y-position.y)<18
+			attack = absf(target.position.x-position.x)<58 and absf(target.position.y-position.y)<18 and arena.tutorial.step>=5
 		var offset := destination-position
 		direction = offset.normalized() if offset.length()>12 else Vector2.ZERO
 		interact = true
@@ -54,10 +60,12 @@ func _physics_process(dt: float) -> void:
 		else:
 			start_attack()
 	if jump and jump_height<=0 and stun<=0:
+		arena.tutorial.record_action("jump", self)
 		jump_speed = 235
-	if dodge and dash<=0 and energy>=10:
+	if dodge and dash<=0:
+		arena.tutorial.record_action("dodge", self)
 		dash = 0.24
-		energy -= 10
+
 		invulnerable = 0.3
 	energy = minf(100,energy+dt*5)
 	jump_height += jump_speed*dt
@@ -67,7 +75,7 @@ func _physics_process(dt: float) -> void:
 		jump_speed=0
 	if absf(direction.x)>0.1 and attack_time<=0:
 		facing = signf(direction.x)
-	var speed := 120.0
+	var speed := 145.0
 	if Input.is_action_pressed(prefix+"run"): speed=185
 	if dash>0:
 		dash-=dt
@@ -77,6 +85,7 @@ func _physics_process(dt: float) -> void:
 	if stun>0: speed=0
 	velocity = direction * Vector2(speed,speed*0.66)
 	move_and_slide()
+	if velocity.length()>5: arena.tutorial.record_action("move", self)
 	position.x=clampf(position.x,20,arena.open_limit)
 	position.y=clampf(position.y,190,326)
 	if attack_time>0:
@@ -98,6 +107,7 @@ func _physics_process(dt: float) -> void:
 	$PlayerMarker.text="P%d" % (player_id+1) if not ai_controlled else "IA"
 
 func start_attack() -> void:
+	arena.tutorial.record_action("attack", self)
 	combo=combo%3+1
 	attack_duration=0.43 if combo<3 else 0.55
 	attack_time=attack_duration
