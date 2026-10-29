@@ -39,11 +39,15 @@ func _physics_process(dt: float) -> void:
 	var dodge := Input.is_action_just_pressed(prefix+"dodge")
 	var interact := Input.is_action_pressed(prefix+"interact")
 	if ai_controlled:
+		attack=false
+		jump=false
+		dodge=false
 		var target = arena.nearest_enemy(position)
-		var destination: Vector2 = arena.players[0].position + Vector2(36,20)
+		if arena.tutorial.step<7: target=null
+		var destination: Vector2 = arena.players[0].position + Vector2(-30,20)
 		if target != null:
 			destination = target.position - Vector2(28 * signf(target.position.x-position.x),0)
-			attack = absf(target.position.x-position.x)<58 and absf(target.position.y-position.y)<18 and arena.tutorial.step>=5
+			attack = absf(target.position.x-position.x)<58 and absf(target.position.y-position.y)<18 and arena.tutorial.step>=7
 		var offset := destination-position
 		direction = offset.normalized() if offset.length()>12 else Vector2.ZERO
 		interact = true
@@ -54,7 +58,7 @@ func _physics_process(dt: float) -> void:
 		return
 	if interact:
 		arena.interact(self,dt)
-	if attack and stun<=0:
+	if attack and stun<=0 and not arena.is_assembling(self):
 		if attack_time>0:
 			buffered = true
 		else:
@@ -83,6 +87,7 @@ func _physics_process(dt: float) -> void:
 		speed=300
 	if attack_time>0: speed*=0.25
 	if stun>0: speed=0
+	if arena.is_assembling(self): speed=0
 	velocity = direction * Vector2(speed,speed*0.66)
 	set_collision_mask_value(4,jump_height<20)
 	move_and_slide()
@@ -108,6 +113,9 @@ func _physics_process(dt: float) -> void:
 	if jump_height>0: animation="jump"
 	if attack_time>0: animation="heavy" if combo==3 else "attack"
 	if stun>0: animation="hurt"
+	if arena.is_assembling(self):
+		animation="build"
+		facing=signf(605-position.x)
 	sprite.play(animation)
 	sprite.flip_h=facing<0
 	$Visual.position.y=-jump_height

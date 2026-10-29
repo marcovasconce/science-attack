@@ -1,5 +1,9 @@
 extends Node2D
 const GermScene = preload("res://scenes/actors/germ.tscn")
+const BUILD_DURATION := 3.2
+var part_origins: Array[Vector2] = []
+var build_grace := 0.0
+var active_builders: Array = []
 var players: Array = []
 var controls_locked := true
 @onready var tutorial = $Tutorial
@@ -32,6 +36,7 @@ func nearest_player(at: Vector2):
 	var distance=INF
 	for player in players:
 		if player.down: continue
+		if tutorial.step==5 and player.ai_controlled: continue
 		var d: float=at.distance_squared_to(player.position)
 		if d<distance: best=player; distance=d
 	return best
@@ -45,6 +50,7 @@ func spawn_wave() -> void:
 func strike(player, combo: int, targets: Array) -> void:
 	for enemy in get_tree().get_nodes_in_group("germs"):
 		if enemy in targets or enemy.dead: continue
+		if player.ai_controlled and tutorial.step<7: continue
 		var offset: Vector2=enemy.position-player.position
 		if absf(offset.y)<22 and offset.x*player.facing>-12 and offset.x*player.facing<65:
 			targets.append(enemy)
@@ -65,8 +71,15 @@ func strike(player, combo: int, targets: Array) -> void:
 			prop.take_hit(28 if combo==3 else 18,player.facing,player)
 func germ_defeated(at: Vector2) -> void:
 	defeated+=1
-	pieces+=2
+	collect_parts(2,at)
 	effects.append({"p":at+Vector2(0,-18),"t":0.4})
+func collect_parts(amount: int, at: Vector2) -> void:
+	pieces+=amount
+	for i in range(amount):
+		if part_origins.size()<8:
+			part_origins.append(at+Vector2(-16+i*15,10+(i%2)*8))
+func is_assembling(player) -> bool:
+	return not built and build_grace>0 and player in active_builders
 func interact(player, dt: float) -> void:
 	for other in players:
 		if other!=player and other.down and player.position.distance_to(other.position)<40:
@@ -77,11 +90,18 @@ func interact(player, dt: float) -> void:
 				other.invulnerable=2
 				other.revive_progress=0
 	if tutorial.step<6: return
+	if player.ai_controlled: return
 	if built or pieces<8 or player.position.distance_to(Vector2(540,250))>62: return
 	var partner=players[1] if player==players[0] else players[0]
 	if partner.position.distance_to(Vector2(540,250))<85 and not partner.down:
-		build_progress=minf(2.0,build_progress+dt)
-		if build_progress>=2:
+		active_builders=[player,partner] if partner.ai_controlled else [player]
+		if not partner.ai_controlled and Input.is_action_pressed("p%d_interact"%partner.player_id):
+			active_builders.append(partner)
+		build_grace=0.2
+		var rate=1.0 if active_builders.size()==2 else 0.65
+		build_progress=minf(BUILD_DURATION,build_progress+dt*rate)
+		$BuildSite.sample(build_progress/BUILD_DURATION)
+		if build_progress>=BUILD_DURATION:
 			built=true
 			pieces-=8
 			open_limit=1230
@@ -90,6 +110,7 @@ func interact(player, dt: float) -> void:
 			$Gate/Collision.set_deferred("disabled",true)
 			spawn_wave()
 func _process(dt: float) -> void:
+	if not controls_locked: build_grace=maxf(0,build_grace-dt)
 	if Input.is_action_just_pressed("controls"):
 		$HUD/ControlsPanel.visible=not $HUD/ControlsPanel.visible
 		controls_locked=$HUD/ControlsPanel.visible or tutorial.step==0
@@ -110,6 +131,7 @@ func _process(dt: float) -> void:
 	status.text="✓" if victory else ""
 	if players[0].down and players[1].down: status.text="R  ↻"
 	$HUD/Pieces.text="◆ %02d" % pieces if tutorial.step>=4 else ""
+	$HUD/Goal.visible=tutorial.step>0 and not built
 	for fx in effects: fx.t-=dt
 	effects=effects.filter(func(fx): return fx.t>0)
 	queue_redraw()

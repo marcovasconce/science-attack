@@ -1,7 +1,8 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/cartoon_crate.gd" id="1_pggtb"]
-[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_057.png" id="2_i78fu"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_106.png" id="2_i78fu"]
+[ext_resource type="Script" path="res://scripts/ground_fragment.gd" id="3_ft53k"]
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ft53k"]
 friction = 0.65
@@ -10,14 +11,14 @@ bounce = 0.12
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_k1ddd"]
 size = Vector2(33, 15)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_7uth0"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_k1ddd"]
 atlas = ExtResource("2_i78fu")
 region = Rect2(0, 0, 35, 70)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gbjid"]
 size = Vector2(12, 8)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_03yoe"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_7uth0"]
 atlas = ExtResource("2_i78fu")
 region = Rect2(35, 0, 35, 70)
 
@@ -65,11 +66,12 @@ collision_layer = 0
 gravity_scale = 0.0
 freeze = true
 linear_damp = 4.0
+script = ExtResource("3_ft53k")
 
 [node name="Fragment" type="Sprite2D" parent="Debris/Left" unique_id=775075330]
 texture_filter = 2
-scale = Vector2(0.5714286, 0.5714286)
-texture = SubResource("AtlasTexture_7uth0")
+scale = Vector2(0.57, 0.24)
+texture = SubResource("AtlasTexture_k1ddd")
 
 [node name="Collision" type="CollisionShape2D" parent="Debris/Left" unique_id=1486788500]
 shape = SubResource("RectangleShape2D_gbjid")
@@ -81,11 +83,12 @@ collision_layer = 0
 gravity_scale = 0.0
 freeze = true
 linear_damp = 4.0
+script = ExtResource("3_ft53k")
 
 [node name="Fragment" type="Sprite2D" parent="Debris/Right" unique_id=719792544]
 texture_filter = 2
-scale = Vector2(0.5714286, 0.5714286)
-texture = SubResource("AtlasTexture_03yoe")
+scale = Vector2(0.57, 0.24)
+texture = SubResource("AtlasTexture_7uth0")
 
 [node name="Collision" type="CollisionShape2D" parent="Debris/Right" unique_id=894834533]
 shape = SubResource("RectangleShape2D_sqo08")

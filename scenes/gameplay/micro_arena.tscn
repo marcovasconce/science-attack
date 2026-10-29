@@ -13,9 +13,11 @@
 [ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_090.png" id="13_nb66d"]
 [ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_046.png" id="14_suw8t"]
 [ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_064.png" id="15_0ee04"]
-[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_036.png" id="16_d6w1x"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_057.png" id="16_5pm8b"]
 [ext_resource type="PackedScene" path="res://scenes/actors/cartoon_crate.tscn" id="17_4tjp2"]
 [ext_resource type="Script" path="res://scripts/cartoon_crate.gd" id="18_g5gfu"]
+[ext_resource type="Script" path="res://scripts/build_site.gd" id="19_5pm8b"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_092.png" id="20_j8sbc"]
 [ext_resource type="SpriteFrames" path="res://assets/avatars/Dude_Monster.tres" id="blue"]
 [ext_resource type="Script" path="res://scripts/tutorial_guide.gd" id="tutorial"]
 
@@ -183,7 +185,7 @@ _data = {
 &"wake": SubResource("Animation_8frcu")
 }
 
-[sub_resource type="Image" id="Image_ow8x6"]
+[sub_resource type="Image" id="Image_j8sbc"]
 data = {
 "data": PackedByteArray("u9jf/w=="),
 "format": "RGBA8",
@@ -193,7 +195,7 @@ data = {
 }
 
 [sub_resource type="ImageTexture" id="ImageTexture_pfr6r"]
-image = SubResource("Image_ow8x6")
+image = SubResource("Image_j8sbc")
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_nkj2c"]
 texture = ExtResource("7_khwvd")
@@ -280,6 +282,7 @@ offset_top = 52.0
 theme_override_font_sizes/font_size = 13
 
 [node name="Pieces" type="Label" parent="HUD" unique_id=859769155]
+visible = false
 offset_left = 232.0
 offset_top = 12.0
 theme_override_font_sizes/font_size = 11
@@ -361,6 +364,16 @@ offset_bottom = 5.0
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.27058825, 0.6117647, 0.7411765, 1)
 text = ")))"
+
+[node name="Goal" type="Label" parent="HUD" unique_id=1020612402]
+offset_left = 202.0
+offset_top = 11.0
+offset_right = 438.0
+offset_bottom = 34.0
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.14117648, 0.29803923, 0.39607844, 1)
+text = "Abra a passagem"
+horizontal_alignment = 1
 
 [node name="Tutorial" type="Node" parent="." unique_id=1418880509]
 script = ExtResource("tutorial")
@@ -700,22 +713,25 @@ visible = false
 z_index = -4
 
 [node name="Deck0" type="Sprite2D" parent="Bridge" unique_id=1877287005]
+modulate = Color(1, 0.85, 0.5, 1)
 texture_filter = 2
 position = Vector2(605, 208)
 scale = Vector2(1.1857142, 0.5714286)
-texture = ExtResource("16_d6w1x")
+texture = ExtResource("16_5pm8b")
 
 [node name="Deck1" type="Sprite2D" parent="Bridge" unique_id=330609338]
+modulate = Color(1, 0.85, 0.5, 1)
 texture_filter = 2
 position = Vector2(605, 251)
 scale = Vector2(1.1857142, 0.5714286)
-texture = ExtResource("16_d6w1x")
+texture = ExtResource("16_5pm8b")
 
 [node name="Deck2" type="Sprite2D" parent="Bridge" unique_id=323552280]
+modulate = Color(1, 0.85, 0.5, 1)
 texture_filter = 2
 position = Vector2(605, 294)
 scale = Vector2(1.1857142, 0.5714286)
-texture = ExtResource("16_d6w1x")
+texture = ExtResource("16_5pm8b")
 
 [node name="Breakables" type="Node2D" parent="." unique_id=1109189335]
 y_sort_enabled = true
@@ -804,3 +820,86 @@ shape = SubResource("RectangleShape2D_lvcjm")
 [node name="East" type="CollisionShape2D" parent="StageBoundaries" unique_id=594461068]
 position = Vector2(1270, 260)
 shape = SubResource("RectangleShape2D_43u7i")
+
+[node name="BuildSite" type="Node2D" parent="." unique_id=317467430]
+z_index = 6
+script = ExtResource("19_5pm8b")
+
+[node name="Pieces" type="Node2D" parent="BuildSite" unique_id=184523637]
+
+[node name="Piece0" type="Sprite2D" parent="BuildSite/Pieces" unique_id=88690434]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece1" type="Sprite2D" parent="BuildSite/Pieces" unique_id=608830776]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece2" type="Sprite2D" parent="BuildSite/Pieces" unique_id=645630743]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece3" type="Sprite2D" parent="BuildSite/Pieces" unique_id=664683992]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece4" type="Sprite2D" parent="BuildSite/Pieces" unique_id=1818532459]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece5" type="Sprite2D" parent="BuildSite/Pieces" unique_id=1375538055]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece6" type="Sprite2D" parent="BuildSite/Pieces" unique_id=568417044]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Piece7" type="Sprite2D" parent="BuildSite/Pieces" unique_id=572041604]
+visible = false
+texture_filter = 2
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("20_j8sbc")
+
+[node name="Blueprint" type="Node2D" parent="BuildSite" unique_id=1043695951]
+
+[node name="Slot0" type="Sprite2D" parent="BuildSite/Blueprint" unique_id=2031530525]
+modulate = Color(0.2, 0.85, 1, 0.42)
+position = Vector2(605, 208)
+scale = Vector2(1.1857142, 0.5714286)
+texture = ExtResource("16_5pm8b")
+
+[node name="Slot1" type="Sprite2D" parent="BuildSite/Blueprint" unique_id=1837528090]
+modulate = Color(0.2, 0.85, 1, 0.42)
+position = Vector2(605, 251)
+scale = Vector2(1.1857142, 0.5714286)
+texture = ExtResource("16_5pm8b")
+
+[node name="Slot2" type="Sprite2D" parent="BuildSite/Blueprint" unique_id=1501655688]
+modulate = Color(0.2, 0.85, 1, 0.42)
+position = Vector2(605, 294)
+scale = Vector2(1.1857142, 0.5714286)
+texture = ExtResource("16_5pm8b")
+
+[node name="Count" type="Label" parent="BuildSite" unique_id=1728031484]
+offset_left = 518.0
+offset_top = 169.0
+offset_right = 518.0
+offset_bottom = 169.0
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.14117648, 0.29803923, 0.39607844, 1)
+text = "0 / 8"

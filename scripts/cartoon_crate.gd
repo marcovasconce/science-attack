@@ -26,15 +26,13 @@ func take_hit(damage: int, direction: float, player) -> void:
 	set_deferred("collision_layer",0)
 	set_deferred("collision_mask",0)
 	$Feet.set_deferred("disabled",true)
-	arena.pieces+=3
+	arena.collect_parts(3,position)
 	arena.tutorial.record_action("crate",player)
 	arena.effects.append({"p":position+Vector2(0,-18),"t":0.3})
 	for chunk in $Debris.get_children():
 		chunk.reparent(arena.get_node("Debris"))
+		chunk.global_position=global_position+Vector2(-10 if chunk.name=="Left" else 10,0)
 		chunk.visible=true
 		chunk.freeze=false
 		chunk.apply_central_impulse(Vector2(-90 if chunk.name=="Left" else 90,-30))
-		var fade=chunk.create_tween()
-		fade.tween_interval(0.6)
-		fade.tween_property(chunk,"modulate:a",0.0,0.6)
-		fade.tween_callback(chunk.queue_free)
+		chunk.angular_velocity=-2 if chunk.name=="Left" else 2

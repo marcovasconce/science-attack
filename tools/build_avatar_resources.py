@@ -8,9 +8,11 @@ for folder in ['1 Pink_Monster','2 Owlet_Monster','3 Dude_Monster']:
 shutil.copy2(src/'license.txt',root/'assets/avatars/license.txt')
 def frames(prefix,folder):
  anims={'idle':('Idle',4,8,True),'run':('Run',6,12,True),'attack':('Attack1',4,14,False),'heavy':('Attack2',6,14,False),'jump':('Jump',8,14,False),'hurt':('Hurt',4,12,False),'death':('Death',8,10,False),'push':('Push',6,10,True)}
+ if prefix!='Dude_Monster': anims['build']=('Build',6,10,True)
  out=['[gd_resource type="SpriteFrames" load_steps=100 format=3]']; subs=[]; entries=[]
  for i,(name,(file,n,fps,loop)) in enumerate(anims.items()):
-  path=f'assets/avatars/{folder}/{prefix}_{file}_{n}.png'; w,h=Image.open(root/path).size
+  path=f'assets/animations/{"Owlet" if prefix=="Owlet_Monster" else "Pink"}_build_6.png' if file=='Build' else f'assets/avatars/{folder}/{prefix}_{file}_{n}.png'
+  w,h=Image.open(root/path).size
   out.append(f'[ext_resource type="Texture2D" path="res://{path}" id="{i}"]')
   ids=[]
   for j in range(n):

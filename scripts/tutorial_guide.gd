@@ -11,7 +11,7 @@ var next_delay := 0.0
 @onready var bubble: Control = $"../HUD/Communicator"
 @onready var message: Label = bubble.get_node("Message")
 @onready var key: Label = bubble.get_node("Key")
-const MESSAGES = ["", "Vamos andar!", "Vamos pular!", "Desvie!", "Quebre a caixa!", "Acerte o germe!", "Vamos montar juntos!", "Agora é com vocês!"]
+const MESSAGES = ["", "Vá até a seta.", "Vamos pular!", "Desvie!", "Quebre a caixa laranja!", "Derrote a bactéria.", "Monte a ponte para passar.", "Agora é com vocês!"]
 const KEYS = ["", "W A S D", "ESPAÇO", "SHIFT", "F", "F", "E • segurar", ""]
 func begin() -> void:
 	arena.controls_locked=true
@@ -54,7 +54,7 @@ func _process(dt: float) -> void:
 	if step==4 and action_done: complete()
 	if step==5 and arena.defeated>0 and hit_germ: complete()
 	if step==6:
-		message.text="Junte 8 peças!" if arena.pieces<8 and not arena.built else "Vamos montar juntos!"
+		message.text="Quebre caixas: %d/8 peças."%mini(8,arena.pieces) if arena.pieces<8 and not arena.built else "Monte a ponte para passar."
 		key.text=("F" if arena.pieces<8 else "E • segurar") if arena.players[1].ai_controlled else ("F / J" if arena.pieces<8 else "E / U • segurar")
 		if arena.built: complete()
 	if step==7 and arena.victory:

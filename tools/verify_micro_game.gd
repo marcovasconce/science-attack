@@ -56,10 +56,21 @@ func run() -> void:
 	await process_frame
 	check(arena.get_node("Breakables/Crate0").collision_layer==0,"Broken crates release their collision")
 	check(arena.get_node("Debris").get_child_count()==2,"Breaking releases physical fragments")
+	await create_timer(1.3).timeout
+	check(arena.get_node("Debris").get_child_count()==2,"Fragments must remain on the floor")
+	for fragment in arena.get_node("Debris").get_children():
+		check(fragment.freeze and fragment.modulate.a==1.0,"Floor fragments settle without fading")
+	check("106" in arena.get_node("Breakables/Crate1/Sprite").texture.resource_path,"Orange crate art must contrast with the floor")
 	guide._process(0.8)
 	check(guide.step==5 and arena.pieces==3,"Real crate break must grant pieces and unlock combat")
 	var enemy=arena.nearest_enemy(player.position)
 	player.position=enemy.position-Vector2(30,0)
+	var ai_before=enemy.hp
+	partner.position=enemy.position-Vector2(30,0)
+	partner.facing=1
+	var ai_targets: Array=[]
+	arena.strike(partner,3,ai_targets)
+	check(enemy.hp==ai_before,"AI must never damage the tutorial bacterium")
 	var before=enemy.hp
 	arena.strike(player,1,targets)
 	check(enemy.hp<before,"Aligned attack damages tutorial germ")
@@ -71,10 +82,18 @@ func run() -> void:
 	await process_frame
 	guide._process(0.8)
 	check(guide.step==6,"Combat lesson requires the child's hit and germ defeat")
-	arena.pieces=8
+	arena.collect_parts(3,Vector2(465,285))
 	player.position=Vector2(530,250)
 	partner.position=Vector2(550,250)
-	arena.interact(player,2.1)
+	arena.interact(player,1.4)
+	check(not arena.built and arena.is_assembling(player),"Construction must take time and animate the builders")
+	arena.get_node("WakeSequence").pause()
+	player._physics_process(0.016)
+	check(player.sprite.animation==&"build" and player.sprite.sprite_frames.get_frame_count("build")==6,"Players must use new six-frame construction sprites")
+	var flying=arena.get_node("BuildSite/Pieces/Piece3")
+	check(flying.visible and flying.position.y<arena.part_origins[3].y,"Loose parts must travel through the air to the build site")
+	check(arena.get_node("Bridge/Deck0").visible and not arena.get_node("Bridge/Deck2").visible,"Structure must appear one section at a time")
+	arena.interact(player,2.0)
 	guide._process(0.8)
 	check(guide.step==7 and arena.built,"Cooperative building completes tutorial")
 	player.invulnerable=0
@@ -117,7 +136,33 @@ func run() -> void:
 		guide._process(0.01)
 		for captured_enemy in get_nodes_in_group("germs"): captured_enemy.set_physics_process(false)
 		await capture("cartoon_communicator")
-	if failures.is_empty(): print("PASS: complete cartoon floor, remote communicator, crate physics, impulses, fragments, collision release, wake and tutorial")
+		for captured_enemy in get_nodes_in_group("germs"): captured_enemy.queue_free()
+		guide.step=6
+		guide.age=0
+		player.position=Vector2(525,266)
+		partner.position=Vector2(485,291)
+		arena.get_node("Camera2D").position.x=440
+		arena.collect_parts(3,Vector2(410,260))
+		arena.collect_parts(3,Vector2(470,305))
+		arena.collect_parts(2,Vector2(510,215))
+		arena.interact(player,1.4)
+		guide._process(0.01)
+		for avatar in arena.players:
+			avatar.sprite.animation=&"build"
+			avatar.sprite.frame=3
+			avatar.sprite.pause()
+		await capture("construction_mid")
+		if "--sequence" in OS.get_cmdline_user_args():
+			DirAccess.make_dir_recursive_absolute("res://.godot/construction_frames")
+			for frame in range(41):
+				var progress=minf(1,frame/32.0)
+				arena.build_progress=progress*arena.BUILD_DURATION
+				for avatar in arena.players: avatar.sprite.frame=(frame%6) if progress<1 else 5
+				arena.get_node("BuildSite").sample(progress)
+				await process_frame
+				await RenderingServer.frame_post_draw
+				root.get_texture().get_image().save_png("res://.godot/construction_frames/%03d.png"%frame)
+	if failures.is_empty(): print("PASS: orange crates, persistent settled debris, protected tutorial bacterium, generated build animations, flying pieces, progressive construction and tutorial")
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
