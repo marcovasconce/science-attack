@@ -1,0 +1,105 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animations/amanda_armed_walk.png" id="sheet"]
+
+[sub_resource type="AtlasTexture" id="frame_0"]
+atlas = ExtResource("sheet")
+region = Rect2(46, 61, 235, 230)
+metadata/draw_size = Vector2(30.0457, 29.4064)
+metadata/foot_anchor = Vector2(22.1826, 28.0000)
+
+[sub_resource type="AtlasTexture" id="frame_1"]
+atlas = ExtResource("sheet")
+region = Rect2(416, 56, 241, 236)
+metadata/draw_size = Vector2(30.8128, 30.1735)
+metadata/foot_anchor = Vector2(22.8858, 28.6393)
+
+[sub_resource type="AtlasTexture" id="frame_2"]
+atlas = ExtResource("sheet")
+region = Rect2(784, 57, 254, 234)
+metadata/draw_size = Vector2(32.4749, 29.9178)
+metadata/foot_anchor = Vector2(24.4840, 28.5114)
+
+[sub_resource type="AtlasTexture" id="frame_3"]
+atlas = ExtResource("sheet")
+region = Rect2(1179, 56, 258, 236)
+metadata/draw_size = Vector2(32.9863, 30.1735)
+metadata/foot_anchor = Vector2(24.2922, 29.1507)
+
+[sub_resource type="AtlasTexture" id="frame_4"]
+atlas = ExtResource("sheet")
+region = Rect2(47, 322, 255, 228)
+metadata/draw_size = Vector2(32.6027, 29.1507)
+metadata/foot_anchor = Vector2(24.4201, 28.1279)
+
+[sub_resource type="AtlasTexture" id="frame_5"]
+atlas = ExtResource("sheet")
+region = Rect2(410, 324, 282, 227)
+metadata/draw_size = Vector2(36.0548, 29.0228)
+metadata/foot_anchor = Vector2(28.0000, 27.8721)
+
+[sub_resource type="AtlasTexture" id="frame_6"]
+atlas = ExtResource("sheet")
+region = Rect2(800, 323, 269, 227)
+metadata/draw_size = Vector2(34.3927, 29.0228)
+metadata/foot_anchor = Vector2(26.1461, 28.8950)
+
+[sub_resource type="AtlasTexture" id="frame_7"]
+atlas = ExtResource("sheet")
+region = Rect2(1185, 332, 278, 219)
+metadata/draw_size = Vector2(35.5434, 28.0000)
+metadata/foot_anchor = Vector2(27.5525, 27.1050)
+
+[sub_resource type="AtlasTexture" id="frame_8"]
+atlas = ExtResource("sheet")
+region = Rect2(110, 588, 239, 201)
+metadata/draw_size = Vector2(33.2935, 28.0000)
+metadata/foot_anchor = Vector2(8.6368, 28.0000)
+
+[sub_resource type="AtlasTexture" id="frame_9"]
+atlas = ExtResource("sheet")
+region = Rect2(494, 589, 238, 200)
+metadata/draw_size = Vector2(33.1542, 27.8607)
+metadata/foot_anchor = Vector2(8.6368, 27.8607)
+
+[sub_resource type="AtlasTexture" id="frame_10"]
+atlas = ExtResource("sheet")
+region = Rect2(871, 588, 239, 204)
+metadata/draw_size = Vector2(33.2935, 28.4179)
+metadata/foot_anchor = Vector2(8.5672, 28.4179)
+
+[sub_resource type="AtlasTexture" id="frame_11"]
+atlas = ExtResource("sheet")
+region = Rect2(1263, 588, 232, 200)
+metadata/draw_size = Vector2(32.3184, 27.8607)
+metadata/foot_anchor = Vector2(8.5672, 27.8607)
+
+[sub_resource type="AtlasTexture" id="frame_12"]
+atlas = ExtResource("sheet")
+region = Rect2(113, 812, 237, 193)
+metadata/draw_size = Vector2(33.0149, 26.8856)
+metadata/foot_anchor = Vector2(8.7761, 26.8856)
+
+[sub_resource type="AtlasTexture" id="frame_13"]
+atlas = ExtResource("sheet")
+region = Rect2(504, 812, 242, 195)
+metadata/draw_size = Vector2(33.7114, 27.1642)
+metadata/foot_anchor = Vector2(8.7065, 27.1642)
+
+[sub_resource type="AtlasTexture" id="frame_14"]
+atlas = ExtResource("sheet")
+region = Rect2(880, 811, 248, 199)
+metadata/draw_size = Vector2(34.5473, 27.7214)
+metadata/foot_anchor = Vector2(9.1244, 27.7214)
+
+[sub_resource type="AtlasTexture" id="frame_15"]
+atlas = ExtResource("sheet")
+region = Rect2(1289, 811, 233, 199)
+metadata/draw_size = Vector2(32.4577, 27.7214)
+metadata/foot_anchor = Vector2(8.8458, 27.7214)
+
+[resource]
+animations = [{"name":&"brush_idle","speed":5,"loop":true,"frames":[{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_1"),"duration":1.0},{"texture":SubResource("frame_1"),"duration":1.0},{"texture":SubResource("frame_1"),"duration":1.0},{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_0"),"duration":1.0}]},
+{"name":&"brush_run","speed":10,"loop":true,"frames":[{"texture":SubResource("frame_2"),"duration":1.0},{"texture":SubResource("frame_3"),"duration":1.0},{"texture":SubResource("frame_4"),"duration":1.0},{"texture":SubResource("frame_5"),"duration":1.0},{"texture":SubResource("frame_6"),"duration":1.0},{"texture":SubResource("frame_7"),"duration":1.0}]},
+{"name":&"bubbles_idle","speed":5,"loop":true,"frames":[{"texture":SubResource("frame_8"),"duration":1.0},{"texture":SubResource("frame_8"),"duration":1.0},{"texture":SubResource("frame_8"),"duration":1.0},{"texture":SubResource("frame_9"),"duration":1.0},{"texture":SubResource("frame_9"),"duration":1.0},{"texture":SubResource("frame_9"),"duration":1.0},{"texture":SubResource("frame_8"),"duration":1.0},{"texture":SubResource("frame_8"),"duration":1.0}]},
+{"name":&"bubbles_run","speed":10,"loop":true,"frames":[{"texture":SubResource("frame_10"),"duration":1.0},{"texture":SubResource("frame_11"),"duration":1.0},{"texture":SubResource("frame_12"),"duration":1.0},{"texture":SubResource("frame_13"),"duration":1.0},{"texture":SubResource("frame_14"),"duration":1.0},{"texture":SubResource("frame_15"),"duration":1.0}]}]

@@ -16,11 +16,10 @@ func run() -> void:
 	check(arena.controls_locked and guide.step==0,"Wake cutscene must lock gameplay")
 	check(not arena.has_node("Actors/BlueAssistant") and arena.has_node("HUD/Communicator"),"Assistant must only exist in the communicator")
 	check(arena.get_node("Breakables/Crate0") is RigidBody2D,"Crates must be real physics bodies")
-	for x in range(40):
-		for y in range(5,12):
-			check(arena.get_node("LaboratoryTiles").get_cell_source_id(Vector2i(x,y))>=0,"Walkable floor must have no holes")
+	check(arena.has_node("Environment/Rift"),"The floor must contain the visible construction gap")
+	check(not arena.has_node("LabFurniture") and not arena.has_node("Terminal"),"Microscopic stage must omit furniture and computers")
 	check(arena.get_node("WakeSequence").has_animation("wake"),"Wake animation must be serialized")
-	check(arena.get_node("LaboratoryTiles").get_used_cells().size()>300,"Imported tilemap must be authored in the scene")
+	check(arena.get_node("Environment/Floor").texture is AtlasTexture,"Metal floor art must be authored in the scene")
 	check(InputMap.action_get_events("p0_jump")[0].physical_keycode==KEY_SPACE,"P1 jumps with Space")
 	check(InputMap.action_get_events("p1_jump")[0].physical_keycode==KEY_K,"P2 jumps with K")
 	guide._process(3.7)
@@ -60,10 +59,12 @@ func run() -> void:
 	check(arena.get_node("Debris").get_child_count()==2,"Fragments must remain on the floor")
 	for fragment in arena.get_node("Debris").get_children():
 		check(fragment.freeze and fragment.modulate.a==1.0,"Floor fragments settle without fading")
-	check("106" in arena.get_node("Breakables/Crate1/Sprite").texture.resource_path,"Orange crate art must contrast with the floor")
+	check("metal_crate_break" in arena.get_node("Breakables/Crate1/Sprite").texture.resource_path,"Crates use the referenced metal box sprite sheet")
 	guide._process(0.8)
 	check(guide.step==5 and arena.pieces==3,"Real crate break must grant pieces and unlock combat")
 	var enemy=arena.nearest_enemy(player.position)
+	check(enemy.hp==72,"The tutorial germ also receives doubled health")
+	enemy.set_physics_process(false)
 	player.position=enemy.position-Vector2(30,0)
 	var ai_before=enemy.hp
 	partner.position=enemy.position-Vector2(30,0)
@@ -79,6 +80,10 @@ func run() -> void:
 	check(enemy.hp==after,"Same swing must not damage twice")
 	targets.clear()
 	arena.strike(player,3,targets)
+	check(not enemy.dead,"Tougher tutorial germ survives the former two-hit finish")
+	player.position=enemy.position-Vector2(30,0)
+	targets.clear()
+	arena.strike(player,3,targets)
 	await process_frame
 	guide._process(0.8)
 	check(guide.step==6,"Combat lesson requires the child's hit and germ defeat")
@@ -89,7 +94,7 @@ func run() -> void:
 	check(not arena.built and arena.is_assembling(player),"Construction must take time and animate the builders")
 	arena.get_node("WakeSequence").pause()
 	player._physics_process(0.016)
-	check(player.sprite.animation==&"build" and player.sprite.sprite_frames.get_frame_count("build")==6,"Players must use new six-frame construction sprites")
+	check(player.sprite.animation==&"build" and player.sprite.sprite_frames.get_frame_count("build")==12,"Players must use twelve-frame empty-handed construction")
 	var flying=arena.get_node("BuildSite/Pieces/Piece3")
 	check(flying.visible and flying.position.y<arena.part_origins[3].y,"Loose parts must travel through the air to the build site")
 	check(arena.get_node("Bridge/Deck0").visible and not arena.get_node("Bridge/Deck2").visible,"Structure must appear one section at a time")
@@ -162,7 +167,7 @@ func run() -> void:
 				await process_frame
 				await RenderingServer.frame_post_draw
 				root.get_texture().get_image().save_png("res://.godot/construction_frames/%03d.png"%frame)
-	if failures.is_empty(): print("PASS: orange crates, persistent settled debris, protected tutorial bacterium, generated build animations, flying pieces, progressive construction and tutorial")
+	if failures.is_empty(): print("PASS: metal crates, persistent settled debris, protected tutorial bacterium, generated build animations, flying pieces, progressive construction and tutorial")
 	else:
 		for failure in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)

@@ -1,0 +1,140 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/tabletop_puzzle.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_029.png" id="housing"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_032.png" id="console"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_035.png" id="left_foot"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_037.png" id="right_foot"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_039.png" id="blue"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_040.png" id="yellow"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_053.png" id="green"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_056.png" id="handle"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_067.png" id="gear"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_082.png" id="marker"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_109.png" id="screen"]
+
+[sub_resource type="AtlasTexture" id="left_crop"]
+atlas = ExtResource("left_foot")
+region = Rect2(0,0,70,22)
+[sub_resource type="AtlasTexture" id="right_crop"]
+atlas = ExtResource("right_foot")
+region = Rect2(0,0,70,22)
+[sub_resource type="AtlasTexture" id="blue_crop"]
+atlas = ExtResource("blue")
+region = Rect2(10,30,50,40)
+[sub_resource type="AtlasTexture" id="yellow_crop"]
+atlas = ExtResource("yellow")
+region = Rect2(10,30,50,40)
+[sub_resource type="AtlasTexture" id="green_crop"]
+atlas = ExtResource("green")
+region = Rect2(10,30,50,40)
+[sub_resource type="AtlasTexture" id="handle_crop"]
+atlas = ExtResource("handle")
+region = Rect2(20,15,30,55)
+[sub_resource type="AtlasTexture" id="marker_crop"]
+atlas = ExtResource("marker")
+region = Rect2(10,20,50,30)
+[sub_resource type="AtlasTexture" id="screen_crop"]
+atlas = ExtResource("screen")
+region = Rect2(7,7,56,56)
+
+[node name="AssemblyPuzzle" type="Node2D"]
+z_index = -2
+texture_filter = 1
+script = ExtResource("script")
+
+[node name="Machine" type="Node2D" parent="."]
+position = Vector2(2225,214)
+
+[node name="LeftFoot" type="Node2D" parent="Machine"]
+position = Vector2(-42,-5)
+[node name="Sprite" type="Sprite2D" parent="Machine/LeftFoot"]
+texture = SubResource("left_crop")
+scale = Vector2(1.1,1.1)
+
+[node name="RightFoot" type="Node2D" parent="Machine"]
+position = Vector2(35,-5)
+[node name="Sprite" type="Sprite2D" parent="Machine/RightFoot"]
+texture = SubResource("right_crop")
+scale = Vector2(1.1,1.1)
+
+[node name="LeftHousing" type="Node2D" parent="Machine"]
+position = Vector2(-44,-43)
+[node name="Sprite" type="Sprite2D" parent="Machine/LeftHousing"]
+texture = ExtResource("housing")
+scale = Vector2(0.92,0.92)
+modulate = Color(0.72,1.05,1.15,1)
+
+[node name="RightHousing" type="Node2D" parent="Machine"]
+position = Vector2(20,-43)
+[node name="Sprite" type="Sprite2D" parent="Machine/RightHousing"]
+texture = ExtResource("housing")
+scale = Vector2(0.92,0.92)
+modulate = Color(0.72,1.05,1.15,1)
+
+[node name="Console" type="Node2D" parent="Machine"]
+position = Vector2(-44,-43)
+[node name="Sprite" type="Sprite2D" parent="Machine/Console"]
+texture = ExtResource("console")
+scale = Vector2(0.66,0.66)
+modulate = Color(1.08,1.2,1.2,1)
+[node name="Screen" type="Sprite2D" parent="Machine/Console"]
+position = Vector2(-4,-4)
+texture = SubResource("screen_crop")
+scale = Vector2(0.5,0.5)
+modulate = Color(0.8,1,1,0)
+
+[node name="GearLarge" type="Node2D" parent="Machine"]
+position = Vector2(15,-49)
+[node name="Sprite" type="Sprite2D" parent="Machine/GearLarge"]
+texture = ExtResource("gear")
+scale = Vector2(0.55,0.55)
+modulate = Color(1.2,1.0,0.5,1)
+
+[node name="GearSmall" type="Node2D" parent="Machine"]
+position = Vector2(36,-28)
+[node name="Sprite" type="Sprite2D" parent="Machine/GearSmall"]
+texture = ExtResource("gear")
+scale = Vector2(0.33,0.33)
+modulate = Color(1.15,0.8,0.45,1)
+
+[node name="Lights" type="Node2D" parent="Machine"]
+position = Vector2(-12,-82)
+[node name="Blue" type="Sprite2D" parent="Machine/Lights"]
+position = Vector2(-32,0)
+texture = SubResource("blue_crop")
+scale = Vector2(0.4,0.4)
+[node name="Yellow" type="Sprite2D" parent="Machine/Lights"]
+texture = SubResource("yellow_crop")
+scale = Vector2(0.4,0.4)
+[node name="Green" type="Sprite2D" parent="Machine/Lights"]
+position = Vector2(32,0)
+texture = SubResource("green_crop")
+scale = Vector2(0.4,0.4)
+
+[node name="Lever" type="Node2D" parent="Machine"]
+position = Vector2(72,-21)
+[node name="Sprite" type="Sprite2D" parent="Machine/Lever"]
+texture = ExtResource("housing")
+scale = Vector2(0.4,0.4)
+[node name="Pivot" type="Node2D" parent="Machine/Lever"]
+position = Vector2(0,-3)
+rotation = -0.65
+[node name="Handle" type="Sprite2D" parent="Machine/Lever/Pivot"]
+texture = SubResource("handle_crop")
+offset = Vector2(0,-27.5)
+scale = Vector2(0.65,0.65)
+
+[node name="BuildMarker" type="Sprite2D" parent="."]
+position = Vector2(2200,298)
+texture = SubResource("marker_crop")
+scale = Vector2(0.72,0.72)
+modulate = Color(0.7,0.9,1,0.35)
+
+[node name="Hint" type="Label" parent="."]
+offset_left = 2090.0
+offset_top = 91.0
+offset_right = 2360.0
+offset_bottom = 107.0
+horizontal_alignment = 1
+mouse_filter = 2

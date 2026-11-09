@@ -1,0 +1,23 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/environment/cooperative_elevator.tscn" id="cabin"]
+[ext_resource type="Script" path="res://scripts/arrival_elevator.gd" id="script"]
+[ext_resource type="Script" path="res://scripts/elevator_doors.gd" id="doors"]
+[sub_resource type="RectangleShape2D" id="door_shape"]
+size = Vector2(224,12)
+[node name="ArrivalElevator" instance=ExtResource("cabin")]
+script = ExtResource("script")
+[node name="Doors" type="Control" parent="."]
+z_index = 5
+clip_contents = true
+offset_left = -103.0
+offset_top = -142.0
+offset_right = 103.0
+offset_bottom = -13.0
+mouse_filter = 2
+script = ExtResource("doors")
+[node name="DoorBlocker" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+[node name="Collision" type="CollisionShape2D" parent="DoorBlocker"]
+position = Vector2(0,-13)
+shape = SubResource("door_shape")

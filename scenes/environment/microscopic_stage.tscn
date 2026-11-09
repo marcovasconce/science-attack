@@ -1,0 +1,24 @@
+[gd_scene format=3]
+[ext_resource type="Texture2D" path="res://assets/environment/microscopic_panels.png" id="art"]
+[ext_resource type="Script" path="res://scripts/floor_rift.gd" id="rift"]
+[sub_resource type="AtlasTexture" id="wall"]
+atlas = ExtResource("art")
+region = Rect2(0, 0, 1672, 600)
+[sub_resource type="AtlasTexture" id="floor"]
+atlas = ExtResource("art")
+region = Rect2(0, 600, 1672, 341)
+[node name="MicroscopicStage" type="Node2D"]
+z_index = -20
+texture_filter = 1
+[node name="Wall" type="Sprite2D" parent="."]
+texture = SubResource("wall")
+centered = false
+scale = Vector2(0.7655502392, 0.3133333333)
+[node name="Floor" type="Sprite2D" parent="."]
+position = Vector2(0, 188)
+texture = SubResource("floor")
+centered = false
+scale = Vector2(0.7655502392, 0.5043988270)
+[node name="Rift" type="Node2D" parent="."]
+z_index = 10
+script = ExtResource("rift")

@@ -12,9 +12,9 @@ const MAX_ARRIVAL := MAX_WAIT + MAX_TRAVEL
 const ENTRY_START := MAX_ARRIVAL + 0.35
 const ENTRY_DURATION := 0.8
 const POWER_START := ENTRY_START + ENTRY_DURATION + 0.25
-const CHARGE_DURATION := 1.8
+const CHARGE_DURATION := 0.8
 const SHRINK_START := POWER_START + CHARGE_DURATION
-const SHRINK_DURATION := 3.0
+const SHRINK_DURATION := 1.4
 const SHRINK_END := SHRINK_START + SHRINK_DURATION
 const END_TIME := SHRINK_END + 0.9
 const GLASS := [Rect2(337, 143, 38, 55), Rect2(393, 143, 36, 55)]
@@ -35,6 +35,7 @@ var tube_bodies: Array[Sprite2D] = []
 var body_scales: Array[float] = []
 var front_glass: Node2D
 var glow: Node2D
+var sleep_overlay: Node2D
 
 
 func configure(maximum: Node2D, amanda: Node2D) -> void:
@@ -68,6 +69,15 @@ func configure(maximum: Node2D, amanda: Node2D) -> void:
 	front_glass = $GlassInFrontOfScientists
 	front_glass.name = "GlassInFrontOfScientists"
 	front_glass.draw.connect(_draw_glass)
+	# Keep lettering at a stable screen size instead of enlarging it with the camera.
+	var overlay := CanvasLayer.new()
+	overlay.layer = 3
+	add_child(overlay)
+	sleep_overlay = Node2D.new()
+	overlay.add_child(sleep_overlay)
+	sleep_overlay.draw.connect(_draw_sleep_signs)
+	$MaxDream.hide()
+	$AmandaDream.hide()
 	reset()
 
 
@@ -118,9 +128,9 @@ func sample(time: float) -> void:
 	# Bodies stay full size in the sleeping capsules throughout remote control.
 	shrink_factor = 1.0
 	for index in range(2):
-		tube_bodies[index].scale = Vector2.ONE * body_scales[index]
-	$MaxDream.visible = elapsed >= POWER_START
-	$AmandaDream.visible = elapsed >= POWER_START
+		var breath := sin((elapsed - POWER_START) * TAU / 1.65 + index * 0.65)
+		var amount := 0.018 * smoothstep(POWER_START - 0.2, POWER_START + 0.3, elapsed)
+		tube_bodies[index].scale = Vector2(1.0 - breath * amount * 0.5, 1.0 + breath * amount) * body_scales[index]
 	var activation := smoothstep(POWER_START, POWER_START + 0.5, elapsed)
 	var pulse := 0.5 + 0.5 * sin((elapsed - POWER_START) * TAU / 1.05 - PI * 0.5)
 	var settle := 1.0 - smoothstep(SHRINK_END, END_TIME, elapsed)
@@ -162,6 +172,23 @@ func _refresh_effects() -> void:
 	queue_redraw()
 	glow.queue_redraw()
 	front_glass.queue_redraw()
+	if is_instance_valid(sleep_overlay):
+		sleep_overlay.queue_redraw()
+
+
+func _draw_sleep_signs() -> void:
+	if not active or elapsed < POWER_START:
+		return
+	var font := ThemeDB.fallback_font
+	for index in range(2):
+		for letter in range(3):
+			var phase := fposmod((elapsed - POWER_START) / 1.65 + letter / 3.0 + index * 0.15, 1.0)
+			var alpha := smoothstep(0.0, 0.18, phase) * (1.0 - smoothstep(0.7, 1.0, phase))
+			var world := Vector2(GLASS[index].get_center().x + 7 + phase * 13, 151 - phase * 27)
+			var screen := get_canvas_transform() * world
+			var size := int(12 + phase * 7)
+			sleep_overlay.draw_string_outline(font, screen, "Z", HORIZONTAL_ALIGNMENT_LEFT, -1, size, 3, Color(0.025, 0.08, 0.15, alpha))
+			sleep_overlay.draw_string(font, screen, "Z", HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(0.85, 0.98, 1.0, alpha))
 
 
 func _draw() -> void:

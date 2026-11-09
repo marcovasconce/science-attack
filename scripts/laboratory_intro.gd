@@ -26,7 +26,7 @@ const CAMERA_ZOOM := 1.28
 const CAMERA_DURATION := 1.35
 const DIALOGUE_START := 6.18
 const FADE_START := Shrinking.SHRINK_END + 0.3
-const FADE_DURATION := 1.5
+const FADE_DURATION := 0.85
 
 var elapsed := 0.0
 var paused := false
@@ -100,7 +100,7 @@ func _process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not event is InputEventKey or not event.pressed or event.echo:
 		return
-	if event.keycode == KEY_R:
+	if event.is_action_pressed("restart"):
 		restart()
 	elif event.keycode == KEY_SPACE:
 		set_paused(not paused)
@@ -181,11 +181,17 @@ func _on_dialogue_completed() -> void:
 
 func _update_machine_camera() -> void:
 	var time := maxf(0.0, elapsed - sequence_start)
-	var opening := smoothstep(0.0, 1.1, time)
-	var wide_center := VIEW * 0.5
-	var focus := smoothstep(Shrinking.MAX_ARRIVAL, Shrinking.MAX_ARRIVAL + 1.6, time)
-	camera.zoom = Vector2.ONE * lerpf(lerpf(sequence_camera_zoom, 1.0, opening), 1.65, focus)
-	camera.position = sequence_camera_position.lerp(wide_center, opening).lerp(Vector2(371, 182), focus)
+	var opening := smoothstep(0.0, 0.55, time)
+	var focus := smoothstep(Shrinking.MAX_ARRIVAL - 0.35, Shrinking.POWER_START + 0.35, time)
+	var sleeping := smoothstep(Shrinking.POWER_START, Shrinking.SHRINK_END, time)
+	var zoom_level := lerpf(lerpf(sequence_camera_zoom, 1.32, opening), 1.75 + sleeping * 0.08, focus)
+	camera.zoom = Vector2.ONE * zoom_level
+	# Track the pair along the stairs, then settle on the sleeping capsules.
+	var midpoint := (doctor_max.position + scientist.position) * 0.5
+	var target := midpoint + Vector2(-12, -55)
+	var center := sequence_camera_position.lerp(target, opening).lerp(Vector2(383, 167), focus)
+	var half_frame := VIEW / (2.0 * zoom_level)
+	camera.position = center.clamp(half_frame, VIEW - half_frame)
 	camera.force_update_scroll()
 
 

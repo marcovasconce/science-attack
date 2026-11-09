@@ -1,0 +1,19 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/encounter_dialogue.gd" id="script"]
+[ext_resource type="SpriteFrames" path="res://assets/avatars/Dude_Monster.tres" id="dude"]
+[node name="EncounterDialogue" type="Control"]
+visible = false
+z_index = 20
+offset_left = 16.0
+offset_top = 118.0
+offset_right = 624.0
+offset_bottom = 236.0
+mouse_filter = 2
+script = ExtResource("script")
+[node name="RadioPortrait" type="AnimatedSprite2D" parent="."]
+sprite_frames = ExtResource("dude")
+animation = &"idle"
+autoplay = "idle"
+[node name="Speaker" type="Label" parent="."]
+[node name="Message" type="Label" parent="."]
+[node name="Key" type="Label" parent="."]

@@ -1,5 +1,5 @@
 extends Node
-## Remote communicator: observes the team without a physical world entity.
+## Tibúrcio guides the tutorial remotely, then meets the team at the supply outpost.
 var step := 0
 var age := 0.0
 var action_done := false
@@ -11,14 +11,19 @@ var next_delay := 0.0
 @onready var bubble: Control = $"../HUD/Communicator"
 @onready var message: Label = bubble.get_node("Message")
 @onready var key: Label = bubble.get_node("Key")
-const MESSAGES = ["", "Vá até a seta.", "Vamos pular!", "Desvie!", "Quebre a caixa laranja!", "Derrote a bactéria.", "Monte a ponte para passar.", "Agora é com vocês!"]
-const KEYS = ["", "W A S D", "ESPAÇO", "SHIFT", "F", "F", "E • segurar", ""]
+const MESSAGES = ["", "Vá até a seta.", "Vamos pular!", "Desvie!", "Quebre a caixa metálica!", "Derrote a bactéria.", "Monte a ponte de metal.", "Agora é com vocês!"]
+const KEYS = ["", "W A S D", "ESPAÇO", "SHIFT", "F", "F", "SEGURE E", ""]
 func begin() -> void:
 	arena.controls_locked=true
 	arena.open_limit=340
 	start_position=arena.players[0].position
 	$"../WakeSequence".play("wake")
 func _process(dt: float) -> void:
+	if arena.encounter.is_modal() or arena.encounter.unlocked:
+		bubble.visible=false
+		arena.get_node("GoalMarker").hide()
+		arena.encounter.update_ultimate_lesson(dt)
+		return
 	if arena.get_node("HUD/ControlsPanel").visible and step>0: return
 	age+=dt
 	if step==0:
@@ -40,7 +45,7 @@ func _process(dt: float) -> void:
 	if step==5:
 		var germ=arena.nearest_enemy(arena.players[0].position)
 		if germ!=null: marker.position=germ.position+Vector2(0,-65)
-	if step==6 and arena.pieces>=8: marker.position=Vector2(540,150)
+	if step==6 and arena.pieces>=8: marker.position=Vector2(566,220)
 	marker.position.y+=sin(age*4)*4
 	var leader=arena.players[0]
 	bubble.visible=step<7 or age<3.0
@@ -54,17 +59,17 @@ func _process(dt: float) -> void:
 	if step==4 and action_done: complete()
 	if step==5 and arena.defeated>0 and hit_germ: complete()
 	if step==6:
-		message.text="Quebre caixas: %d/8 peças."%mini(8,arena.pieces) if arena.pieces<8 and not arena.built else "Monte a ponte para passar."
-		key.text=("F" if arena.pieces<8 else "E • segurar") if arena.players[1].ai_controlled else ("F / J" if arena.pieces<8 else "E / U • segurar")
+		message.text="Caixas: %d/8 parafusos."%mini(8,arena.pieces) if arena.pieces<8 and not arena.built else "Monte a ponte de metal."
+		key.text=("F" if arena.pieces<8 else "SEGURE E") if arena.players[1].ai_controlled else ("F / J" if arena.pieces<8 else "SEGURE E / U")
 		if arena.built: complete()
 	if step==7 and arena.victory:
 		bubble.visible=true
 		message.text="Conseguimos!"
-		key.text="✓"
+		key.text="OK!"
 	if next_delay>0:
 		next_delay-=dt
 		message.text="Boa!"
-		key.text="✓"
+		key.text="OK!"
 		if next_delay<=0: advance()
 func record_action(action: String, player) -> void:
 	if player.ai_controlled or arena.controls_locked: return
@@ -81,7 +86,7 @@ func advance() -> void:
 	if step==5:
 		var enemy=arena.GermScene.instantiate()
 		enemy.position=Vector2(490,260)
-		enemy.hp=36
+		enemy.hp=72
 		enemy.speed=23
 		arena.get_node("Actors").add_child(enemy)
 		arena.wave=1

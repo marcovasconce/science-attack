@@ -1,0 +1,30 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animations/soap_water_splash.png" id="sheet"]
+
+[sub_resource type="AtlasTexture" id="frame_0"]
+atlas = ExtResource("sheet")
+region = Rect2(190, 135, 230, 340)
+
+[sub_resource type="AtlasTexture" id="frame_1"]
+atlas = ExtResource("sheet")
+region = Rect2(568, 130, 470, 350)
+
+[sub_resource type="AtlasTexture" id="frame_2"]
+atlas = ExtResource("sheet")
+region = Rect2(1070, 135, 680, 345)
+
+[sub_resource type="AtlasTexture" id="frame_3"]
+atlas = ExtResource("sheet")
+region = Rect2(60, 550, 520, 265)
+
+[sub_resource type="AtlasTexture" id="frame_4"]
+atlas = ExtResource("sheet")
+region = Rect2(610, 590, 540, 225)
+
+[sub_resource type="AtlasTexture" id="frame_5"]
+atlas = ExtResource("sheet")
+region = Rect2(1180, 610, 550, 215)
+
+[resource]
+animations = [{"name":&"effect","speed":12,"loop":false,"frames":[{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_1"),"duration":1.0},{"texture":SubResource("frame_2"),"duration":1.0},{"texture":SubResource("frame_3"),"duration":1.0},{"texture":SubResource("frame_4"),"duration":1.0},{"texture":SubResource("frame_5"),"duration":1.0}]}]

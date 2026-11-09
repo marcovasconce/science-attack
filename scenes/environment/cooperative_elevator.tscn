@@ -1,0 +1,101 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/cooperative_elevator.gd" id="elevator"]
+[ext_resource type="Script" path="res://scripts/elevator_pad.gd" id="pad"]
+[ext_resource type="Texture2D" path="res://assets/environment/cooperative_elevator.png" id="art"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="font"]
+
+[sub_resource type="AtlasTexture" id="cabin_art"]
+atlas = ExtResource("art")
+region = Rect2(96, 88, 1216, 960)
+
+[sub_resource type="RectangleShape2D" id="column_shape"]
+size = Vector2(16, 104)
+
+[sub_resource type="RectangleShape2D" id="rear_shape"]
+size = Vector2(228, 10)
+
+[node name="Elevator" type="Node2D"]
+z_index = -2
+texture_filter = 1
+script = ExtResource("elevator")
+
+[node name="Shaft" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-120,-316,120,-316,120,-18,-120,-18)
+color = Color(0.025, 0.065, 0.095, 1)
+
+[node name="LeftRail" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-116,-316,-109,-316,-109,-18,-116,-18)
+color = Color(0.20, 0.36, 0.43, 1)
+
+[node name="RightRail" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(109,-316,116,-316,116,-18,109,-18)
+color = Color(0.20, 0.36, 0.43, 1)
+
+[node name="Cabin" type="Node2D" parent="."]
+
+[node name="FrameCollision" type="AnimatableBody2D" parent="Cabin"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Left" type="CollisionShape2D" parent="Cabin/FrameCollision"]
+position = Vector2(-121, -68)
+shape = SubResource("column_shape")
+
+[node name="Right" type="CollisionShape2D" parent="Cabin/FrameCollision"]
+position = Vector2(121, -68)
+shape = SubResource("column_shape")
+
+[node name="Rear" type="CollisionShape2D" parent="Cabin/FrameCollision"]
+position = Vector2(0, -74)
+shape = SubResource("rear_shape")
+
+[node name="Sprite" type="Sprite2D" parent="Cabin"]
+position = Vector2(-134, -211)
+scale = Vector2(0.22, 0.22)
+texture = SubResource("cabin_art")
+centered = false
+
+[node name="LeftPad" type="Node2D" parent="Cabin"]
+position = Vector2(-51, -32)
+script = ExtResource("pad")
+
+[node name="RightPad" type="Node2D" parent="Cabin"]
+position = Vector2(51, -32)
+script = ExtResource("pad")
+
+[node name="Hint" type="Label" parent="."]
+offset_left = -155.0
+offset_top = 12.0
+offset_right = 155.0
+offset_bottom = 24.0
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 8
+theme_override_colors/font_outline_color = Color(0.02,0.04,0.08,1)
+theme_override_constants/outline_size = 3
+text = "UM EM CADA PLATAFORMA"
+horizontal_alignment = 1
+
+[node name="Transition" type="CanvasLayer" parent="."]
+layer = 100
+
+[node name="Black" type="ColorRect" parent="Transition"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0,0,0,0)
+
+[node name="Message" type="Label" parent="Transition/Black"]
+visible = false
+layout_mode = 0
+offset_top = 166.0
+offset_right = 640.0
+offset_bottom = 215.0
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 8
+text = "CARREGANDO..."
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -5,6 +5,7 @@
 - Piso, paredes, tubulações, amostras, caixas, terminal, barreiras e setas: Platformer Pack Industrial, Kenney Vleugels, CC0. https://kenney.nl/assets/platformer-pack-industrial
 - Germes: Random Germs/Amoeba Sprites, ChiliGames, opção CC0 oferecida pelo autor. https://opengameart.org/content/random-germsamoeba-sprites
 - Os originais, inclusive a licença da Kenney, estão em `cartoon/`. `cartoon_tiles.png` contém apenas cópias redimensionadas dos tiles prontos 029, 030, 057 e 095. As imagens originais foram preservadas. Os germes usam regiões do PNG original, sem redesenho.
+- Gerador e caixas de suprimentos da bancada: sprites originais do mesmo pacote Industrial (carcaça, terminal, pés, lâmpadas, alavanca, engrenagens, caixa e visor). As peças são animadas separadamente no Godot; não usam as texturas de sucata realista da primeira fase.
 - O assistente existe apenas no comunicador do HUD. O retrato continua sendo Dude Monster, do pacote AVATAR fornecido pelo usuário.
 
 ## Assets das versões anteriores

@@ -1,0 +1,30 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/animations/soap_water_beam.png" id="sheet"]
+
+[sub_resource type="AtlasTexture" id="frame_0"]
+atlas = ExtResource("sheet")
+region = Rect2(0, 0, 887, 296)
+
+[sub_resource type="AtlasTexture" id="frame_1"]
+atlas = ExtResource("sheet")
+region = Rect2(887, 0, 887, 296)
+
+[sub_resource type="AtlasTexture" id="frame_2"]
+atlas = ExtResource("sheet")
+region = Rect2(0, 296, 887, 296)
+
+[sub_resource type="AtlasTexture" id="frame_3"]
+atlas = ExtResource("sheet")
+region = Rect2(887, 296, 887, 296)
+
+[sub_resource type="AtlasTexture" id="frame_4"]
+atlas = ExtResource("sheet")
+region = Rect2(0, 592, 887, 295)
+
+[sub_resource type="AtlasTexture" id="frame_5"]
+atlas = ExtResource("sheet")
+region = Rect2(887, 592, 887, 295)
+
+[resource]
+animations = [{"name":&"effect","speed":12,"loop":true,"frames":[{"texture":SubResource("frame_0"),"duration":1.0},{"texture":SubResource("frame_1"),"duration":1.0},{"texture":SubResource("frame_2"),"duration":1.0},{"texture":SubResource("frame_3"),"duration":1.0},{"texture":SubResource("frame_4"),"duration":1.0},{"texture":SubResource("frame_5"),"duration":1.0}]}]

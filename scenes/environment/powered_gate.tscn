@@ -1,0 +1,46 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/powered_gate.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_071.png" id="panel"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_040.png" id="lamp"]
+[sub_resource type="RectangleShape2D" id="shape"]
+size = Vector2(20,156)
+[sub_resource type="AtlasTexture" id="lamp_crop"]
+atlas = ExtResource("lamp")
+region = Rect2(10,30,50,40)
+[node name="PoweredGate" type="Node2D"]
+script = ExtResource("script")
+[node name="Body" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+[node name="Collision" type="CollisionShape2D" parent="Body"]
+shape = SubResource("shape")
+[node name="Well" type="Control" parent="."]
+offset_left = -22.0
+offset_top = -96.0
+offset_right = 22.0
+offset_bottom = 78.0
+clip_contents = true
+mouse_filter = 2
+z_index = -1
+[node name="Barrier" type="Node2D" parent="Well"]
+position = Vector2(22,96)
+[node name="Top" type="Sprite2D" parent="Well/Barrier"]
+position = Vector2(0,-54)
+texture = ExtResource("panel")
+scale = Vector2(0.52,0.52)
+[node name="Upper" type="Sprite2D" parent="Well/Barrier"]
+position = Vector2(0,-18)
+texture = ExtResource("panel")
+scale = Vector2(0.52,0.52)
+[node name="Lower" type="Sprite2D" parent="Well/Barrier"]
+position = Vector2(0,18)
+texture = ExtResource("panel")
+scale = Vector2(0.52,0.52)
+[node name="Bottom" type="Sprite2D" parent="Well/Barrier"]
+position = Vector2(0,54)
+texture = ExtResource("panel")
+scale = Vector2(0.52,0.52)
+[node name="Light" type="Sprite2D" parent="Well/Barrier"]
+position = Vector2(0,-84)
+texture = SubResource("lamp_crop")
+scale = Vector2(0.5,0.5)
