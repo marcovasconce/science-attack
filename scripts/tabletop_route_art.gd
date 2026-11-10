@@ -1,6 +1,6 @@
 extends Node2D
 const PIPE = preload("res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_085.png")
-const HUB = preload("res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_067.png")
+const LAB = preload("res://scripts/lab_sprite_atlas.gd")
 const LAMP = preload("res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_040.png")
 @onready var route = get_parent()
 var pipe_texture: AtlasTexture
@@ -16,6 +16,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	if pipe_texture == null: return
+	_cleaner_pipes()
 	# The same exact endpoints drive the shell, water and connection logic.
 	for link in 6:
 		var ends: PackedVector2Array = route.link_points(link)
@@ -26,10 +27,10 @@ func _draw() -> void:
 		for port in route.BASE_PORTS[i]:
 			var direction: Vector2 = route.DIRECTIONS[port].rotated(route.pipe_angle(i))
 			_pipe(at,at+direction*route.PIPE_RADIUS)
-		draw_texture_rect(HUB,Rect2(at-Vector2(15,15),Vector2(30,30)),false,Color("b6d6de"))
 		_water(route.water_path(i),route.water_fill[1+i*2],i+6)
 	for point in route.VALVE_POINTS:
 		draw_line(point-Vector2(0,62),point-Vector2(0,27),Color("546e79"),5)
+	_pump_details()
 	draw_line(Vector2(2300,211),Vector2(2420,211),Color("6be8bc") if route.powered else Color("465b66"),3)
 	for i in 3:
 		var x: float = route.VENTS[i]
@@ -38,16 +39,10 @@ func _draw() -> void:
 		var active: bool = route.vent_active(i)
 		var tint := Color.WHITE if warning or active else Color(0.25,0.35,0.4)
 		draw_texture_rect(lamp_texture,Rect2(x-10,182,20,16),false,tint)
-		if not active: continue
-		var strength := sin((phase-2.8)*PI)
-		for puff in 9:
-			var rise := fposmod(route.steam_clock*1.3+puff*0.13,1)
-			var at := Vector2(x+sin(puff*2.1+route.steam_clock*4)*11,326-rise*132)
-			draw_circle(at,5+rise*9,Color(0.8,0.97,1,0.3*strength*(1-rise)))
-	if not route.drained:
+	if route.collection_age < route.COLLECTION_DURATION:
 		for bubble in 7:
 			var at := Vector2(3160+bubble*22,265+sin(route.steam_clock*2+bubble)*21)
-			draw_arc(at,3+fposmod(route.steam_clock+float(bubble),3),0,TAU,12,Color(0.7,1,0.8,0.5*(1-route.drain_age/2.4)),1)
+			draw_arc(at,3+fposmod(route.steam_clock+float(bubble),3),0,TAU,12,Color(0.7,1,0.8,0.5*(1-route.collection_age/route.COLLECTION_DURATION)),1)
 	# Gentle sparkles make optional finds readable without instructions over every prop.
 	for i in 2:
 		if not route.batteries[i]: _sparkle(route.BATTERY_POINTS[i]+Vector2(0,-25),i)
@@ -95,3 +90,66 @@ func _sparkle(at: Vector2, index: int) -> void:
 	var brightness: float = 0.4+sin(route.steam_clock*3+index)*0.25
 	draw_line(at-Vector2(3,0),at+Vector2(3,0),Color(0.8,1,0.8,brightness),2)
 	draw_line(at-Vector2(0,3),at+Vector2(0,3),Color(0.8,1,0.8,brightness),2)
+
+func _pump_details() -> void:
+	# Separate suction line shows exactly where the green liquid goes.
+	var suction := PackedVector2Array([Vector2(3212,270),Vector2(3212,236),Vector2(3100,236),Vector2(3100,176),Vector2(3078,176)])
+	draw_polyline(suction,Color("142b40"),13)
+	draw_polyline(suction,Color("6b999c"),9)
+	draw_polyline(suction,Color("213b4b"),5)
+	var collecting: bool = route.collection_age > 0 and route.collection_age < route.COLLECTION_DURATION
+	if collecting:
+		draw_polyline(suction,Color("83e322"),5)
+		for i in 6:
+			var at := _path_point(suction,fposmod(route.steam_clock*0.65+i/6.0,1))
+			draw_rect(Rect2(at-Vector2(2,2),Vector2(4,4)),Color("eaff95"))
+	var button := Vector2(route.PUMP_POINT.x,266)
+	draw_line(button,button+Vector2(0,23),Color("274654"),8)
+	draw_line(button,button-Vector2(0,47),Color("527c88"),3)
+	var pressed: bool = route.suction_started
+	var size := Vector2(52,46 if pressed else 52)
+	draw_texture_rect(LAB.control(3),Rect2(button-size*0.5+Vector2(0,3 if pressed else 0),size),false,Color("9bbfbf") if pressed else Color.WHITE)
+	if not pressed and route.step == route.Step.PIPES:
+		var tip := button+Vector2(0,-24+sin(route.steam_clock*3)*2)
+		draw_polyline(PackedVector2Array([tip+Vector2(-4,-4),tip,tip+Vector2(4,-4)]),Color("d9f8e9"),2)
+	for i in 3:
+		var at: Vector2 = route.VALVE_POINTS[i]-Vector2(0,42)
+		var tip := at+Vector2.UP.rotated(route.valve_angles[i])*24
+		draw_circle(tip,4,Color("142b40"))
+		draw_circle(tip,2,Color("ecffff"))
+	for i in 4:
+		var at := Vector2(2810+i*45,210)
+		if route.water_fill[5] > 0.95:
+			draw_polyline(PackedVector2Array([at+Vector2(-3,-3),at,at+Vector2(-3,3)]),Color("e0fcff"),2)
+
+func _button_frame() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("142b40")
+	style.border_color = Color("76adb4")
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	return style
+
+func _cleaner_pipes() -> void:
+	# The rims occlude the ends; submerged sections are drawn inside the glass shader.
+	var path := PackedVector2Array([Vector2(5525,106),Vector2(5525,76),Vector2(5605,76),Vector2(5605,106)])
+	draw_polyline(path,Color("17364b"),10)
+	draw_polyline(path,Color("7fbac2"),6)
+	if route.step >= route.Step.DEFENSE:
+		draw_polyline(path,Color("60dceb"),2)
+		if route.step <= route.Step.PURIFY:
+			for i in 3:
+				var at := _path_point(path,fposmod(route.steam_clock*0.4+i/3.0,1))
+				draw_circle(at,1.5,Color("d6faf5"))
+	draw_polyline(PackedVector2Array([Vector2(5631,211),Vector2(5654,211),Vector2(5654,218),Vector2(5670,218)]),Color("48777e"),6)
+	draw_polyline(PackedVector2Array([Vector2(5445,249),Vector2(5480,249),Vector2(5480,219),Vector2(5501,219)]),Color("48777e"),3)
+
+func _path_point(path: PackedVector2Array, progress: float) -> Vector2:
+	var total := 0.0
+	for i in range(1,path.size()): total += path[i-1].distance_to(path[i])
+	var distance := total*progress
+	for i in range(1,path.size()):
+		var length := path[i-1].distance_to(path[i])
+		if distance <= length: return path[i-1].lerp(path[i],distance/length)
+		distance -= length
+	return path[-1]

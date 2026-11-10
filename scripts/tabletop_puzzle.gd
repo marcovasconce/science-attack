@@ -1,6 +1,7 @@
 extends Node2D
 ## One building spot assembles the authored machine; a fresh lever pull powers it.
 const FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
+const LAB = preload("res://scripts/lab_sprite_atlas.gd")
 const BUILD_POINT := Vector2(2200,298)
 const LEVER_POINT := Vector2(2300,278)
 const BUILD_DURATION := 5.4
@@ -35,6 +36,26 @@ var sources: Array[Vector2] = []
 @onready var lights: Array = [$Machine/Lights/Blue,$Machine/Lights/Yellow,$Machine/Lights/Green]
 
 func _ready() -> void:
+	LAB.apply($Machine/LeftHousing/Sprite,0,0,82)
+	LAB.apply($Machine/RightHousing/Sprite,1,0,82)
+	$Machine/LeftHousing/Sprite.position.y = -8
+	$Machine/RightHousing/Sprite.position.y = -8
+	LAB.apply($Machine/Console/Sprite,0,3,35)
+	$Machine/Console.position = Vector2(-47,-33)
+	$Machine/Console/Screen.hide()
+	LAB.gear($Machine/GearLarge/Sprite,0,43)
+	LAB.gear($Machine/GearSmall/Sprite,0,28)
+	machine.modulate = Color("c5d6df")
+	$Machine/Lights.position = Vector2(-44,-55)
+	for i in 3:
+		LAB.apply_control(lights[i],2,14)
+		lights[i].position = Vector2((i-1)*12,0)
+	$Machine/Lever.position = Vector2(65,-28)
+	LAB.apply_control($Machine/Lever/Sprite,0,46)
+	$Machine/Lever/Sprite.offset = Vector2(0,-65)
+	lever.position = Vector2.ZERO
+	LAB.apply_control($Machine/Lever/Pivot/Handle,1,43)
+	$Machine/Lever/Pivot/Handle.offset = Vector2(0,-110)
 	for part in machine.get_children():
 		parts.append(part)
 		destinations.append(part.position)
@@ -158,10 +179,11 @@ func _sync_machine() -> void:
 		if travel >= 1:
 			var age := snap_ages[i]
 			part.position.y -= sin(age*23)*3*exp(-age*12)
-	$Machine/GearLarge/Sprite.rotation = gear_angle
-	$Machine/GearSmall/Sprite.rotation = -gear_angle*1.65
+	LAB.gear($Machine/GearLarge/Sprite,gear_angle,43)
+	LAB.gear($Machine/GearSmall/Sprite,-gear_angle*1.65,28)
+	$Machine/Console/Sprite.texture = LAB.cell(int(startup_age*7)%4,3)
 	lever.rotation = lerpf(OFF_ANGLE,ON_ANGLE,smoothstep(0,0.55,startup_age))
-	$Machine/Console/Screen.modulate.a = smoothstep(0.6,1.2,startup_age)
+	$Machine/Console/Sprite.modulate = Color("607e8c").lerp(Color.WHITE,smoothstep(0.6,1.2,startup_age))
 	for i in 3:
 		lights[i].modulate = Color(0.28,0.34,0.4).lerp(Color.WHITE,light_levels[i])
 
@@ -192,5 +214,5 @@ func _draw() -> void:
 	for i in 3:
 		if light_levels[i] <= 0: continue
 		var at := to_local(lights[i].global_position)
-		for radius in [9.0,13.0,17.0]:
+		for radius in [3.0,5.0]:
 			draw_circle(at,radius,Color(0.5,1,0.8,0.035*light_levels[i]))

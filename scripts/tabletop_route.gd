@@ -22,7 +22,13 @@ const SAMPLE_POINT := Vector2(5600,290)
 const EXIT_POINT := Vector2(6900,293)
 const WAVE_CHARGE := 10.0
 const FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
-const WATER_SHADER = preload("res://assets/environment/tabletop_water_tank.gdshader")
+const WATER_SHADER = preload("res://assets/environment/machines/puzzle_tube.gdshader")
+const TUBE_SHEET = preload("res://assets/environment/tabletop_props.png")
+const STEAM_SHADER = preload("res://assets/environment/machines/steam.gdshader")
+const LAB = preload("res://scripts/lab_sprite_atlas.gd")
+const COLLECTION_DURATION := 3.0
+const CLEAN_DURATION := 3.2
+const PUMP_POINT := Vector2(3062,296)
 var step := Step.DORMANT
 var powered := false
 var complete := false
@@ -34,6 +40,8 @@ var valve_angles := [PI*0.5,PI*0.5,PI*1.5]
 # Alternating links and pipe interiors: source, pipe 0, link, pipe 1, ... outlet.
 var water_fill: Array[float] = [0,0,0,0,0,0,0,0,0,0,0]
 var tank_fill := 0.0
+var collection_age := 0.0
+var suction_started := false
 var steam_clock := 0.0
 var ambushes := [false,false]
 var passage_open := false
@@ -49,19 +57,96 @@ var checkpoint_name := ""
 var pickup_notice_age := 0.0
 var result_panel: Control
 var tank_material: ShaderMaterial
+var inlet_material: ShaderMaterial
+var cleaner_materials: Array[ShaderMaterial] = []
 var hint_target: Node2D
 @onready var arena = get_parent()
 @onready var hint: Label = $Inventory/Hint
 
 func _ready() -> void:
 	_build_result()
-	for tank in [$PumpDecor/Inlet,$PumpDecor/Outlet]:
-		var material := ShaderMaterial.new()
-		material.shader = WATER_SHADER
-		material.set_shader_parameter("fill_level",1.0 if tank == $PumpDecor/Inlet else 0.0)
-		tank.material = material
-	tank_material = $PumpDecor/Outlet.material
+	inlet_material = _configure_tube($PumpDecor/Inlet,156)
+	tank_material = _configure_tube($PumpDecor/Outlet,156)
+	for i in 2:
+		get_node("PumpDecor/StandTop%d" % i).hide()
+		get_node("PumpDecor/StandFoot%d" % i).hide()
+		var stand: Sprite2D = get_node("PumpDecor/StandLeg%d" % i)
+		LAB.apply(stand,3,0,116)
+		stand.position = Vector2(2680 if i == 0 else 3042,202)
+		stand.show_behind_parent = true
+		stand.z_index = -1
+		cleaner_materials.append(_configure_tube(get_node("Sterilizer/Green/Tank%d" % i),142))
+		cleaner_materials[i].set_shader_parameter("dip_pipe",true)
+		get_node("Sterilizer/Green/Tank%d" % i).position = Vector2(5525+i*80,159)
+		var clamp := Sprite2D.new()
+		clamp.position = Vector2(5505+i*80,201)
+		clamp.z_index = -1
+		LAB.apply(clamp,3,0,104)
+		$Sterilizer.add_child(clamp)
+	$Sterilizer/Blue.hide()
+	for child in $StorageDecor.get_children(): child.hide()
+	for i in 3:
+		var tube := Sprite2D.new()
+		tube.name = "DecorTube%d" % i
+		tube.position = Vector2(4650+i*75,164+i*2)
+		var height := 80+i*7
+		var material := _configure_tube(tube,height)
+		tube.modulate = Color(0.68,0.81,0.9,0.85)
+		material.set_shader_parameter("fill_level",[0.65,0.3,0.8][i])
+		$StorageDecor.add_child(tube)
+		var shadow := Polygon2D.new()
+		shadow.position = tube.position+Vector2(0,height*0.5-2)
+		shadow.polygon = PackedVector2Array([Vector2(-18,0),Vector2(-11,-3),Vector2(11,-3),Vector2(18,0),Vector2(11,3),Vector2(-11,3)])
+		shadow.color = Color(0.12,0.23,0.31,0.16)
+		shadow.z_index = -1
+		$StorageDecor.add_child(shadow)
+	for child in $Sterilizer.get_children():
+		if child.name.begins_with("Foot") or child.name.begins_with("Leg") or child.name in ["Lamp","ConsoleStand","ConsoleFoot"]: child.hide()
+	$PumpDecor/Socket0.hide()
+	$PumpDecor/Socket1.hide()
+	var sample_material := _configure_tube($Sample,30)
+	sample_material.set_shader_parameter("fill_level",0.85)
+	sample_material.set_shader_parameter("liquid_color",Color("28d9ff"))
+	var steam := Node2D.new()
+	steam.name = "SteamSprites"
+	steam.z_index = -1
+	add_child(steam)
+	for i in 3:
+		var puff := Sprite2D.new()
+		puff.texture = LAB.control(i%4,0)
+		puff.centered = false
+		puff.offset = Vector2(-0.5,-0.95)*Vector2(LAB.CONTROLS.get_width()/4.0,LAB.CONTROLS.get_height()/2.0)
+		puff.material = ShaderMaterial.new()
+		puff.material.shader = STEAM_SHADER
+		steam.add_child(puff)
+	$Sterilizer.modulate = Color("c5d6df")
+	$CleaningFans.modulate = Color("c5d6df")
+	LAB.apply($Sterilizer/Console,0,3,70)
+	$Sterilizer/Console.position = Vector2(5420,230)
+	LAB.apply($CleaningFans/Case0,1,0,108)
+	$CleaningFans/Case0.position = Vector2(5707,196)
+	$CleaningFans/Case1.hide()
+	$CleaningFans/Case2.hide()
+	$CleaningFans/Fan0.position = Vector2(5688,191)
+	$CleaningFans/Fan1.position = Vector2(5722,190)
+	$CleaningFans/Fan2.position = Vector2(5708,218)
+	$MachineProgress.position = Vector2(5492,54)
 	_sync_visuals(0)
+
+func cleaning_progress() -> float:
+	# The defense fills the receiving tube continuously; final rinse completes the last 10%.
+	return clampf(charge/(WAVE_CHARGE*3),0,1)*0.9+smoothstep(0,2.5,purify_age)*0.1
+
+func _configure_tube(sprite: Sprite2D, height: float) -> ShaderMaterial:
+	var texture := AtlasTexture.new()
+	texture.atlas = TUBE_SHEET
+	texture.region = Rect2(214,54,230,576)
+	sprite.texture = texture
+	sprite.scale = Vector2.ONE*height/576.0
+	var material := ShaderMaterial.new()
+	material.shader = WATER_SHADER
+	sprite.material = material
+	return material
 
 func begin_power() -> void:
 	if powered: return
@@ -91,15 +176,13 @@ func _process(dt: float) -> void:
 				_set_limit(3090)
 				save_checkpoint("CANOS",Vector2(2660,286))
 		Step.PIPES:
-			if _human_front() > 2660:
-				arena.encounter.say("pipes",["Girem as rodas até a água chegar ao tanque."],step)
 			if tank_fill >= 1:
 				step = Step.DRAIN
 				arena.start_camera_shake(1.4,0.15)
 		Step.DRAIN:
-			drain_age = minf(2.4,drain_age+dt)
-			$DrainGate.openness = smoothstep(1.2,2.4,drain_age)
-			if drain_age >= 2.4:
+			drain_age = minf(CLEAN_DURATION,drain_age+dt)
+			$DrainGate.openness = smoothstep(CLEAN_DURATION-0.8,CLEAN_DURATION,drain_age)
+			if drain_age >= CLEAN_DURATION:
 				drained = true
 				step = Step.STEAM
 				_set_limit(4440)
@@ -163,8 +246,11 @@ func water_path(index: int) -> PackedVector2Array:
 	return PackedVector2Array([at+DIRECTIONS[BASE_PORTS[index][entry]].rotated(angle)*PIPE_RADIUS,at,at+DIRECTIONS[BASE_PORTS[index][1-entry]].rotated(angle)*PIPE_RADIUS])
 
 func _update_water(dt: float) -> void:
+	# Collect the hazardous spill FIRST. The left tube remains full of clean water.
+	if step == Step.PIPES and suction_started:
+		collection_age = minf(COLLECTION_DURATION,collection_age+dt)
 	var before := water_fill.duplicate()
-	var connected := powered
+	var connected := powered and collection_age >= COLLECTION_DURATION
 	for section in water_fill.size():
 		var length := 70.0
 		if section%2 == 1:
@@ -244,6 +330,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func try_action(player) -> bool:
 	if arena.controls_locked or not powered: return false
+	if step == Step.PIPES and not suction_started and _can_act(player,PUMP_POINT,34):
+		suction_started = true
+		return true
 	for i in 3:
 		if step == Step.PIPES and _can_act(player,VALVE_POINTS[i],48): return turn_valve(i,player)
 	if step == Step.EXPLORE and _can_act(player,CONSOLE_POINT,50):
@@ -299,11 +388,12 @@ func _enemies_clear() -> bool:
 
 func _set_limit(value: float) -> void:
 	arena.open_limit = value
-	arena.camera_max_x = minf(arena.world_limit-300,value-270)
+	arena.camera_max_x = arena.world_limit-320
 
 func target_x() -> float:
 	match step:
-		Step.POWER,Step.PIPES,Step.DRAIN: return 2880
+		Step.POWER,Step.DRAIN: return 2880
+		Step.PIPES: return PUMP_POINT.x if not suction_started else 2880
 		Step.STEAM: return 4260
 		Step.EXPLORE,Step.DEFENSE,Step.PURIFY: return CONSOLE_POINT.x
 		Step.SAMPLE: return SAMPLE_POINT.x
@@ -341,6 +431,7 @@ func _update_hint() -> void:
 			elif not puzzle.constructed and not puzzle.needs_salvage(): options.append([puzzle.BUILD_POINT,48,"Montar"])
 		if step == Step.PIPES:
 			for point in VALVE_POINTS: options.append([point,48,"Girar"])
+			if not suction_started: options.append([PUMP_POINT,34,""])
 		if step == Step.EXPLORE: options.append([CONSOLE_POINT,50,"Ligar"])
 		for option in options:
 			if not _can_act(player,option[0],option[1]): continue
@@ -349,7 +440,7 @@ func _update_hint() -> void:
 			nearest = distance
 			hint_target = player
 			var key := "E" if player.player_id == 0 else "U"
-			hint.text = "Segure %s para montar" % key if option[2] == "Montar" else "%s  %s" % [key,option[2]]
+			hint.text = ("Segure %s para montar" % key if option[2] == "Montar" else "%s  %s" % [key,option[2]]).strip_edges()
 	if hint_target != null: hint.show()
 
 func _sync_visuals(dt: float) -> void:
@@ -357,25 +448,51 @@ func _sync_visuals(dt: float) -> void:
 	if sample_taken: $ExitGate.openness = move_toward($ExitGate.openness,1,dt*1.7)
 	for i in 3:
 		valve_angles[i] = lerp_angle(valve_angles[i],valves[i]*PI*0.5,minf(1,dt*12))
-		get_node("ValveWheels/Wheel%d" % i).rotation = valve_angles[i]
+		LAB.gear(get_node("ValveWheels/Wheel%d" % i),valve_angles[i],42)
 		get_node("Record%d" % i).visible = not records[i]
-		get_node("CleaningFans/Fan%d" % i).rotation += dt*(2.0 if step >= Step.DEFENSE else 0.0)
+		LAB.gear(get_node("CleaningFans/Fan%d" % i),steam_clock*(2.0 if step >= Step.DEFENSE else 0.0)*(1 if i == 0 else -1)+i,[42,36,30][i])
 	for i in 2:
 		get_node("Battery%d" % i).visible = not batteries[i]
 		var box = get_node("Supply%d" % i)
 		if supplies[i] and not box.collected: box.restore_collected()
-	$VentMachinery/Fan.rotation += dt*1.8 if powered else 0
-	$Spill.modulate.a = 1.0-smoothstep(0,2.4,drain_age)
-	$Sterilizer/Green.modulate.a = 1.0-smoothstep(0,2.5,purify_age)
-	$Sterilizer/Blue.modulate.a = smoothstep(0,2.5,purify_age)
-	$Sterilizer/Lamp.modulate = Color("81ffb6") if step >= Step.SAMPLE else (Color("ffd36a") if step >= Step.DEFENSE else Color("52666c"))
+	LAB.gear($VentMachinery/Fan,steam_clock*1.8 if powered else 0.0,62)
+	$Spill.modulate.a = 1.0-smoothstep(0,COLLECTION_DURATION,collection_age)
+	$Spill.scale = Vector2(3.25,1.7)*lerpf(1,0.35,collection_age/COLLECTION_DURATION)
+	var cleaned := smoothstep(0,CLEAN_DURATION,drain_age)
+	var purified := cleaning_progress()
+	for i in 2:
+		cleaner_materials[i].set_shader_parameter("fill_level",lerpf(0.86,0.18,purified) if i == 0 else purified*(0.25 if sample_taken else 0.85))
+		cleaner_materials[i].set_shader_parameter("liquid_color",Color("82e31d").lerp(Color("28d9ff"),purified) if i == 0 else Color("28d9ff"))
+		cleaner_materials[i].set_shader_parameter("liquid_time",steam_clock)
+	$Sterilizer/Console.texture = LAB.cell(int(steam_clock*6)%4 if step >= Step.DEFENSE else 0,3)
+	$Sterilizer/Console.modulate = Color.WHITE if step >= Step.DEFENSE else Color("748a9a")
+	for tube in $StorageDecor.get_children():
+		if tube.visible and tube.material != null: tube.material.set_shader_parameter("liquid_time",steam_clock)
 	$Sample.visible = step == Step.SAMPLE
+	$Sample.material.set_shader_parameter("liquid_time",steam_clock)
+	_sync_steam_sprites()
 	if tank_material != null:
-		tank_material.set_shader_parameter("fill_level",tank_fill)
-		tank_material.set_shader_parameter("water_time",steam_clock)
-		$PumpDecor/Inlet.material.set_shader_parameter("water_time",steam_clock)
+		tank_material.set_shader_parameter("fill_level",0.65*collection_age/COLLECTION_DURATION+0.2*cleaned)
+		tank_material.set_shader_parameter("liquid_color",Color("82e31d").lerp(Color("28d9ff"),cleaned))
+		tank_material.set_shader_parameter("liquid_time",steam_clock)
+		inlet_material.set_shader_parameter("fill_level",lerpf(0.95,0.25,cleaned))
+		inlet_material.set_shader_parameter("liquid_time",steam_clock)
 	$Art.queue_redraw()
 	$MachineProgress.queue_redraw()
+
+func _sync_steam_sprites() -> void:
+	# One anchored, frame-animated jet per outlet.
+	for vent in 3:
+		var phase := vent_phase(vent)
+		var strength := clampf(minf((phase-2.8)/0.08,(3.8-phase)/0.08),0,1)
+		var puff: Sprite2D = $SteamSprites.get_child(vent)
+		puff.visible = vent_active(vent)
+		var frame := posmod(int(steam_clock*8),4)
+		puff.texture = LAB.control(frame,0)
+		puff.material.set_shader_parameter("frame_index",float(frame))
+		puff.position = Vector2(VENTS[vent],316)
+		puff.scale = Vector2(74,148)/Vector2(LAB.CONTROLS.get_width()/4.0,LAB.CONTROLS.get_height()/2.0)
+		puff.modulate.a = strength
 
 func save_checkpoint(label: String, at: Vector2) -> void:
 	var party: Array = []
@@ -399,7 +516,9 @@ func restore_checkpoint(data: Dictionary) -> void:
 	records.assign(data.get("records",[false,false,false]))
 	arena.encounter.seen = data["seen"].duplicate()
 	opening_age = 2
-	drain_age = 2.4 if drained else 0
+	drain_age = CLEAN_DURATION if drained else 0
+	collection_age = COLLECTION_DURATION if drained else 0
+	suction_started = drained
 	valves = [0,0,0] if drained else [1,1,3]
 	water_fill.fill(1.0 if drained else 0.0)
 	tank_fill = 1 if drained else 0

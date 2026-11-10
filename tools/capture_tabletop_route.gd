@@ -51,7 +51,8 @@ func run() -> void:
 	route.get_node("PowerGate").openness = 1
 	route._set_limit(3090)
 	view_at(2880,route.VALVE_POINTS[0])
-	stage.encounter.say("pipes",["Girem as rodas até a água chegar ao tanque."],route.step)
+	stage.players[0].position = route.PUMP_POINT
+	route.try_action(stage.players[0])
 	var sequence := "--sequence" in OS.get_cmdline_user_args()
 	if sequence: DirAccess.make_dir_recursive_absolute("res://.godot/kids_water_frames")
 	for frame in 450:

@@ -13,7 +13,7 @@ func _ready() -> void:
 	players[1].sprite.sprite_frames = preload("res://assets/avatars/Pink_Monster.tres")
 	world_limit = 7180
 	open_limit = 2390
-	camera_max_x = open_limit-300
+	camera_max_x = world_limit-320
 	built = true
 	_restore_party()
 	$HUD/TeamHUD.layout_changed.connect(_on_hud_layout_changed)

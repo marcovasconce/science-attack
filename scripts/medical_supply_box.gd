@@ -8,6 +8,17 @@ var fragments: Array[Sprite2D] = []
 @onready var arena = get_parent().get_parent()
 @export var supply_index := 0
 
+func _ready() -> void:
+	var sheet := preload("res://assets/props/metal_crate_break.png")
+	var intact := AtlasTexture.new()
+	intact.atlas = sheet
+	intact.region = Rect2(0,0,sheet.get_width()/3.0,sheet.get_height()/2.0)
+	$Box.texture = intact
+	$Box.scale = Vector2.ONE*64.0/intact.get_height()
+	$Box.position = Vector2(0,-20)
+	$Box.modulate = Color.WHITE
+	$Cross.hide()
+
 func take_hit(damage: int, direction: float, _player) -> void:
 	if broken or damage <= 0: return
 	hp = maxi(0,hp-damage)
@@ -23,8 +34,9 @@ func take_hit(damage: int, direction: float, _player) -> void:
 		var piece := Sprite2D.new()
 		piece.texture = $Box.texture
 		piece.region_enabled = true
-		piece.region_rect = Rect2((i%2)*35,int(i/2)*35,35,35)
-		piece.scale = Vector2.ONE*0.65
+		var half: Vector2 = $Box.texture.get_size()*0.5
+		piece.region_rect = Rect2(Vector2(i%2,int(i/2))*half,half)
+		piece.scale = $Box.scale
 		add_child(piece)
 		fragments.append(piece)
 	_update_art()

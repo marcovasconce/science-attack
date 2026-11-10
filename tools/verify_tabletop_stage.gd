@@ -196,6 +196,13 @@ func run() -> void:
 	var angle: float = puzzle.gear_angle
 	puzzle._process(0.3)
 	check(puzzle.gear_angle != angle and not puzzle.pull_lever(p),"Gears keep turning and repeated lever presses cannot restart completion")
+	var gear_frames: Dictionary = {}
+	var monitor_frames: Dictionary = {}
+	for frame in 12:
+		puzzle._process(0.05)
+		gear_frames[puzzle.get_node("Machine/GearLarge/Sprite").texture] = true
+		monitor_frames[puzzle.get_node("Machine/Console/Sprite").texture] = true
+	check(gear_frames.size() == 4 and monitor_frames.size() == 4,"Running generator plays all four gear and monitor sprite frames")
 	if "--capture" in OS.get_cmdline_user_args():
 		p.position = Vector2(2190,314)
 		q.position = Vector2(2150,314)

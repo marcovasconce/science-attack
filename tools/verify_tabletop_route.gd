@@ -86,7 +86,42 @@ func run() -> void:
 	check(route.step == route.Step.PIPES and stage.open_limit == 3090 and not stage.victory,"Generator opens the water challenge, not the ending")
 	p.position = Vector2(2390,270)
 	check(p.move_and_collide(Vector2(70,0)) == null,"Powered gate releases its collision")
-	tick(1.0)
+	check(route.tank_material.get_shader_parameter("fill_level") == 0.0 and route.inlet_material.get_shader_parameter("fill_level") > 0.9,"Right tube starts empty, left tube starts with water")
+	p.position = Vector2(2700,286)
+	tick(4)
+	check(route.collection_age == 0 and not route.suction_started,"Approaching the puzzle never starts suction automatically")
+	check(not route.try_action(p),"A player away from the pump cannot start suction")
+	p.position = route.PUMP_POINT
+	q.position = route.PUMP_POINT
+	check(not route.try_action(q),"AI companion cannot start suction")
+	stage.controls_locked = true
+	check(not route.try_action(p),"Help blocks the pump button")
+	stage.controls_locked = false
+	p.jump_height = 12
+	check(not route.try_action(p),"Airborne player cannot press the pump")
+	p.jump_height = 0
+	route._update_hint()
+	check(route.hint.text == "E","Pump shows only the nearby player's interaction key")
+	var pump_event := InputEventAction.new()
+	pump_event.action = "p0_interact"
+	pump_event.pressed = true
+	root.push_input(pump_event)
+	check(route.suction_started,"A fresh interaction at the button starts suction")
+	check(not route.try_action(p),"Repeated presses cannot restart suction")
+	check(stage.camera_max_x == stage.world_limit-320,"Camera is no longer clamped to the current gate")
+	stage.players[1].position = Vector2(3000,286)
+	stage._process(0)
+	check(stage.get_node("Camera2D").position.x+320 > 3300,"Camera can show the spill beyond the closed puzzle gate")
+	tick(1.5)
+	check(route.collection_age > 1.4 and route.collection_age < 1.6 and route.water_fill[0] == 0,"Suction collects the spill before clean water can flow")
+	check(route.get_node("Spill").modulate.a > 0.4 and route.get_node("Spill").modulate.a < 0.6 and route.tank_material.get_shader_parameter("fill_level") > 0.3,"Spill shrinks as the right tube fills with hazardous liquid")
+	var collection_before: float = route.collection_age
+	stage.controls_locked = true
+	tick(2)
+	check(route.collection_age == collection_before,"Help pauses suction as well as water")
+	stage.controls_locked = false
+	tick(3.2)
+	check(route.collection_age == route.COLLECTION_DURATION and route.get_node("Spill").modulate.a == 0 and not route.drained,"Collected spill stays locked until the tube is cleaned")
 	check(route.water_fill[1] > 0.9 and route.water_fill[3] == 0 and route.tank_fill == 0,"Water fills the fixed inlet and stops at the first disconnected piece")
 	var before: Array = route.water_fill.duplicate()
 	stage.controls_locked = true
@@ -123,8 +158,9 @@ func run() -> void:
 		var inlet: PackedVector2Array = route.link_points(i)
 		var outlet: PackedVector2Array = route.link_points(i+1)
 		check(path[0].distance_to(inlet[1]) < 0.1 and path[2].distance_to(outlet[0]) < 0.1,"Filled pipe and connector endpoints match physically")
-	tick(2.5)
+	tick(route.CLEAN_DURATION+0.1)
 	check(route.drained and stage.open_limit == 4440,"The cleaned spill opens the next passage")
+	check(route.tank_material.get_shader_parameter("liquid_color").is_equal_approx(Color("28d9ff")) and route.inlet_material.get_shader_parameter("fill_level") < 0.3,"Water from the left tube cleans the right tube and consumes its reservoir")
 	check(not route.turn_valve(0,p),"A completed pipe puzzle cannot be accidentally undone")
 	p.position = route.BATTERY_POINTS[0]
 	p.energy = 10
@@ -167,6 +203,24 @@ func run() -> void:
 	p.position = Vector2(route.VENTS[0],280)
 	p.invulnerable = 0
 	route.steam_clock = 3.0
+	route._sync_visuals(0)
+	var steam_sprite: Sprite2D = route.get_node("SteamSprites").get_child(0)
+	var steam_texture: Texture2D = steam_sprite.texture
+	var steam_position: Vector2 = steam_sprite.position
+	check(steam_sprite.visible and steam_sprite.modulate.a > 0.7,"Active steam uses dense visible sprite frames")
+	route.steam_clock += 0.14
+	route._sync_visuals(0)
+	check(steam_sprite.texture != steam_texture and steam_sprite.position == steam_position and route.get_node("SteamSprites").get_child_count() == 3,"Each outlet uses one anchored animated jet, without stacked puffs")
+	stage.controls_locked = true
+	steam_position = steam_sprite.position
+	var steam_time: float = route.steam_clock
+	route._process(1)
+	check(route.steam_clock == steam_time and steam_sprite.position == steam_position,"Help pauses smoke frames and motion")
+	stage.controls_locked = false
+	route.steam_clock = 3.8
+	route._sync_visuals(0)
+	check(not steam_sprite.visible and not route.vent_active(0),"Steam sprites disappear with the damage window")
+	route.steam_clock = 3.0
 	var hp: int = p.hp
 	route._update_steam()
 	check(p.hp == hp-7,"The active jet still damages grounded characters")
@@ -205,18 +259,24 @@ func run() -> void:
 	check(not stage.is_assembling(q),"Starting the cleaner leaves both players free to fight")
 	tick(3)
 	check(route.charge > 2.9,"Cleaning progresses without holding interaction")
+	var early_fill: float = route.cleaner_materials[1].get_shader_parameter("fill_level")
+	check(early_fill > 0.06 and early_fill < 0.12,"Clean output starts filling during the first defense wave")
+	check(route.cleaner_materials[0].get_shader_parameter("fill_level") < 0.82,"Contaminated input drains gradually during defense")
 	var progress: float = route.charge
 	stage.controls_locked = true
 	tick(3)
 	check(route.charge == progress,"Help pauses the defense timer")
+	check(route.cleaner_materials[1].get_shader_parameter("fill_level") == early_fill,"Help also pauses the gradual cleaning visual")
 	stage.controls_locked = false
 	tick(20)
 	check(route.charge == route.WAVE_CHARGE and route.defense_wave == 1,"Cleaning cannot skip a living enemy wave")
+	check(route.cleaner_materials[1].get_shader_parameter("fill_level") > early_fill and route.cleaning_progress() < 0.31,"Visible cleaning advances with charge but waits for uncleared waves")
 	for wave in [1,2,3]:
 		clear_enemies()
 		tick(0.02)
 		if wave < 3: tick(10.1)
 	check(route.step == route.Step.PURIFY,"Three cleared encounters finish the cleaning task")
+	check(route.cleaning_progress() >= 0.9 and route.cleaner_materials[1].get_shader_parameter("fill_level") > 0.76,"Most transfer is already visible before the final rinse")
 	p.position = route.CONSOLE_POINT
 	tick(2.6)
 	check(route.step == route.Step.SAMPLE,"The clean blue bottle becomes available")
