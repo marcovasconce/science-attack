@@ -4,15 +4,17 @@ const PHASES := ["res://scenes/laboratory_intro.tscn","res://scenes/gameplay/mic
 const NAMES := ["Introdução","Tutorial","Fase 1: bancada","Fase 2: setor inferior","Descida à Colmeia","Fase 3: Colmeia"]
 const SECTORS := ["Canos e água","Passagem do vapor","Depósito","Máquina de limpeza","Frasco limpo","Descida ao laboratório"]
 const LOWER_SECTORS := ["Enxame de bactérias","Quebra-cabeça de Tibúrcio","Emboscada da porta","Gosma e sabonete","Guardião do Rei","Consertar o elevador"]
+const KING_CHAPTER := 31
+const KING_TITLE := "Colmeia: boss final — Rei Bactéria"
 const Route = preload("res://scripts/tabletop_route.gd")
 const Party = preload("res://scripts/party_transfer.gd")
 static func valid(id: int) -> bool:
-	return (id >= 0 and id < PHASES.size()) or (id >= 10 and id < 10+SECTORS.size()) or (id >= 20 and id < 20+LOWER_SECTORS.size()) or id == 30
+	return (id >= 0 and id < PHASES.size()) or (id >= 10 and id < 10+SECTORS.size()) or (id >= 20 and id < 20+LOWER_SECTORS.size()) or id in [30,KING_CHAPTER]
 static func path_for(id: int) -> String:
 	if not valid(id): return ""
-	return PHASES[5 if id == 30 else (3 if id >= 20 else (2 if id >= 10 else id))]
+	return PHASES[5 if id in [30,KING_CHAPTER] else (3 if id >= 20 else (2 if id >= 10 else id))]
 static func reset(tree: SceneTree) -> void:
-	for key in ["party_state","tabletop_entry_state","tabletop_checkpoint","tabletop_retry","lower_lab_entry_state","shaft_entry_state","hive_entry_state","lower_lab_chapter","hive_chapter","hive_king_checkpoint","hive_king_retry"]:
+	for key in ["party_state","tabletop_entry_state","tabletop_checkpoint","tabletop_retry","lower_lab_entry_state","shaft_entry_state","hive_entry_state","lower_lab_chapter","hive_chapter","hive_king_chapter","hive_king_checkpoint","hive_king_retry"]:
 		if tree.has_meta(key): tree.remove_meta(key)
 static func open(tree: SceneTree, id: int, preserve_party := false) -> Error:
 	if not valid(id): return ERR_INVALID_PARAMETER
@@ -29,13 +31,14 @@ static func open(tree: SceneTree, id: int, preserve_party := false) -> Error:
 		tree.set_meta("tabletop_entry_state",party.duplicate(true))
 		tree.set_meta("tabletop_checkpoint",sector_checkpoint(id-10,party))
 		tree.set_meta("tabletop_retry",true)
-	elif id in [3, 4, 5, 30] or id in range(20, 26):
+	elif id in [3, 4, 5, 30, KING_CHAPTER] or id in range(20, 26):
 		if party.is_empty(): party.append({})
 		party[0]["clean_sample"] = true
 		tree.set_meta("party_state", party)
 	elif id >= 2 and not party.is_empty(): tree.set_meta("party_state",party)
 	if id >= 20 and id < 30: tree.set_meta("lower_lab_chapter",id-20)
 	if id == 30: tree.set_meta("hive_chapter",true)
+	if id == KING_CHAPTER: tree.set_meta("hive_king_chapter",true)
 	return tree.change_scene_to_file(path_for(id))
 static func sector_checkpoint(sector: int, party: Array) -> Dictionary:
 	var steps := [Route.Step.PIPES,Route.Step.STEAM,Route.Step.EXPLORE,Route.Step.EXPLORE,Route.Step.SAMPLE,Route.Step.EXIT]

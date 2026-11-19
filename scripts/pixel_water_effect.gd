@@ -1,6 +1,7 @@
 extends Node2D
 ## Animated bitmap effects and soap bubbles on a deliberately coarse 2x pixel grid.
 const BEAM = preload("res://assets/animations/soap_water_beam.tres")
+const TNT = preload("res://assets/effects/tnt_explosion.png")
 const SPLASH = preload("res://assets/animations/soap_water_splash.tres")
 var mode := ""
 var time := 0.0
@@ -18,6 +19,7 @@ func _draw() -> void:
 	elif mode == "brush2":
 		if use_arcade_effects: _arcade_burst(Vector2(160, 96), time - 0.5, 1.2)
 		else: _splash()
+	elif mode == "brush1": _orange_spin()
 	elif mode == "solar": _solar()
 	elif mode == "nova": _nova()
 
@@ -70,22 +72,34 @@ func _splash() -> void:
 		var at := origin+Vector2(cos(a)*radius,sin(a)*radius*0.22-8-age*(14+i%5*5))
 		bubble(at,1+i%2)
 
+func _orange_spin() -> void:
+	var origin := Vector2(160,83)
+	for ring in 3:
+		var points := PackedVector2Array()
+		for i in 23:
+			var angle := time*16+ring*2.1-i*0.10
+			points.append((origin+Vector2(cos(angle)*(61+ring*2),sin(angle)*(26+ring))).round())
+		draw_polyline(points,[Color("fff1b6"),Color("ffb344"),Color("e66b22")][ring],2,false)
+	for i in 12:
+		var angle := time*12+i*TAU/12
+		draw_rect(Rect2((origin+Vector2(cos(angle)*66,sin(angle)*29)).round(),Vector2(2,1)),Color("ffcb70"))
+
 func _solar() -> void:
 	for i in pulses.size():
 		var pulse: Vector2 = pulses[i]
-		var age := time - pulse.x
-		if age < 0.0 or age >= 0.48: continue
-		var origin := Vector2(160 + pulse.y * 0.5, 96)
-		if use_arcade_effects:
-			_arcade_burst(origin, age, 1.0 + i * 0.17)
-			continue
-		var texture: AtlasTexture = SPLASH.get_frame_texture("effect", mini(5, int(age / 0.08)))
-		var size := (texture.region.size * Vector2(0.14, 0.15 + i * 0.035)).round()
-		draw_texture_rect(texture, Rect2((origin - Vector2(size.x * 0.5, size.y)).round(), size), false, Color("ffc16f"))
-		for j in 6:
-			var angle := float(j) * TAU / 6
-			var at := origin + Vector2(cos(angle) * age * 93, sin(angle) * age * 32 - (28 + j * 3) * sin(age * PI))
-			bubble(at, 2 + j % 2)
+		var age := time-pulse.x
+		if age < 0.0 or age >= 8.0/14.0: continue
+		var origin := Vector2(160+pulse.y*0.5,80)
+		var frame := mini(7,int(age*14))
+		var size := 90.0+i*7.0
+		# Exact same eight-frame atlas used by the miniboss TNT, on the 2x pixel canvas.
+		draw_texture_rect_region(TNT,Rect2(origin-Vector2.ONE*size*0.5,Vector2.ONE*size),Rect2(Vector2(frame%4,frame/4)*64,Vector2(64,64)))
+		for j in 16:
+			var angle := j*TAU/16
+			var spread := 12+age*(60+j%4*10)
+			var at := origin+Vector2(cos(angle)*spread,sin(angle)*spread*0.5-age*23)
+			bubble(at,1+(j+i)%4)
+			if j%3 == 0: bubble(at+Vector2(3,3),1)
 
 func _nova() -> void:
 	var nozzle := Vector2(40, 54)

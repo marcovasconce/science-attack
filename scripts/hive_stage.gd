@@ -4,22 +4,26 @@ const Chapters = preload("res://scripts/chapter_catalog.gd")
 const Impact = preload("res://scripts/hive_impact.gd")
 const Flyers = preload("res://scenes/actors/flying_bacterium.tscn")
 const YellowFlyer = preload("res://scenes/actors/yellow_flying_bacterium.tscn")
+const Layout = preload("res://scripts/hive_layout.gd")
+const WorkshopArt = preload("res://scripts/hive_workshop_art.gd")
+const Radio = preload("res://scripts/journey_radio.gd")
+const Finale = preload("res://scripts/hive_finale.gd")
+const EXPLORE_ZOOM := 0.86
 const BOSS_CHECKPOINT := "hive_king_checkpoint"
 const BOSS_RETRY := "hive_king_retry"
 
-const WAVE_ENTRY := 811.0
-const KING_ENTRY := 3511.0
-const WAVE_WEST := 787.0
-const WAVE_EAST := 1125.0
-const SECTORS := [
+var WAVE_ENTRY := Layout.x(811.0)
+var KING_ENTRY := Layout.x(3511.0)
+var WAVE_WEST := Layout.x(787.0)
+var WAVE_EAST := Layout.x(1125.0)
+var SECTORS := [
 	[1260.0, 1216.0, 1630.0, 1437.0, "GALERIA DOS DRENOS"],
 	[1755.0, 1716.0, 2150.0, 1936.0, "ESTAÇÃO DE PRESSÃO"],
 	[2340.0, 2290.0, 2740.0, 2518.0, "TÚNEL DE EXAUSTÃO"],
 	[2960.0, 2910.0, 3352.0, 3122.0, "DIQUE DA COLMEIA"],
 ]
-const KING_WEST := 3472.0
+var KING_WEST := Layout.x(3472.0)
 const FORGE_SECONDS := 0.85
-const SEAL_SECONDS := 1.45
 const ASSAULTS := [
 	[Vector2(957, 246), Vector2(1022, 282), Vector2(1089, 314), Vector2(864, 310)],
 	[Vector2(1080, 253), Vector2(1055, 313), Vector2(807, 248), Vector2(820, 316), Vector2(974, 282)],
@@ -43,16 +47,15 @@ var camera_kick_power := 0.0
 @onready var arrival_lift = $ArrivalElevator
 @onready var vents := $Drains.get_children()
 var arsenal_claimed := false
+var workshop_radio: Control
 var forge_clock := 0.0
 var forge_weapons: Array[Sprite2D] = []
 var forge_starts: Array[Vector2] = []
 var assault := 0
 var remaining := 0
 var spawn_delay := 0.0
-var seal_age := 0.0
-var seal_bottle_start := Vector2.ZERO
-var seal_king_start := Vector2.ZERO
-var seal_target := Vector2.ZERO
+var progress_barrier: StaticBody2D
+var finale: Node
 @onready var arsenal: Node2D = $Arsenal
 @onready var bubble_puzzle = $BubblePuzzle
 @onready var king = $Actors/King
@@ -68,18 +71,24 @@ func _ready() -> void:
 	clean_sample = true
 	use_arcade_effects = true
 	super._ready()
+	Layout.expand(self)
+	WorkshopArt.apply(self)
+	for room in SECTORS:
+		for index in 4: room[index] = Layout.x(room[index])
+	workshop_radio = Radio.new()
+	$HUD.add_child(workshop_radio)
 	bubble_puzzle.burst.connect(_burst)
 	king.health_changed.connect(_show_king_hp)
 	king.enraged.connect(_king_reinforcements)
 	king.exhausted.connect(_ready_capture)
 	room_left = 36.0
-	room_right = 3998.0
-	floor_min = 225.0
-	world_limit = 4044.0
-	open_limit = WAVE_EAST
-	camera_max_x = world_limit - 320.0
+	room_right = Layout.x(3998.0)
+	floor_min = 190.0
+	world_limit = Layout.x(4044.0)
+	open_limit = west_gate.position.x - 24.0
+	camera_max_x = world_limit - 320.0 / EXPLORE_ZOOM
 	_configure_boundaries()
-	west_gate.openness = 1.0
+	west_gate.openness = 0.0
 	king_gate.openness = 1.0
 	$HUD/JourneyTitle.text = "A COLMEIA"
 	$HUD/JourneyTitle.add_theme_color_override("font_outline_color", Color("09121f"))
@@ -103,9 +112,13 @@ func _ready() -> void:
 		_finish_lift()
 		get_tree().remove_meta(BOSS_RETRY)
 		_restore_king_checkpoint()
+	elif get_tree().has_meta("hive_king_chapter"):
+		get_tree().remove_meta("hive_king_chapter")
+		_finish_lift()
+		_start_king_chapter()
 	elif get_tree().has_meta("hive_chapter"):
-		_skip_arrival(Vector2(438, 280), Vector2(474, 306))
-		$Camera2D.position.x = 462
+		_skip_arrival(Layout.point(Vector2(438, 280)), Layout.point(Vector2(474, 306)))
+		$Camera2D.position.x = Layout.x(462)
 		_finish_lift()
 
 func _finish_lift() -> void:
@@ -126,6 +139,25 @@ func _configure_boundaries() -> void:
 		var shape := boundary.shape.duplicate() as RectangleShape2D
 		shape.size.x = world_limit
 		boundary.shape = shape
+	# One invisible collision plane follows the active progression limit.
+	for gate in [west_gate, east_gate, king_gate] + sector_gates:
+		gate.hide()
+		gate.get_node("Body").collision_layer = 0
+	progress_barrier = StaticBody2D.new()
+	progress_barrier.name = "ProgressBarrier"
+	progress_barrier.collision_layer = 1
+	progress_barrier.collision_mask = 0
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(28,220)
+	var collision := CollisionShape2D.new()
+	collision.shape = shape
+	progress_barrier.add_child(collision)
+	add_child(progress_barrier)
+	_sync_progress_barrier()
+
+func _sync_progress_barrier() -> void:
+	progress_barrier.position = Vector2(open_limit+14,258)
+	progress_barrier.collision_layer = 1 if open_limit < room_right else 0
 
 func _skip_arrival(first: Vector2, second: Vector2) -> void:
 	players[0].position = first
@@ -146,6 +178,9 @@ func _process(dt: float) -> void:
 		capture_hint.hide()
 		return
 	_update_camera(dt)
+	if beat == Beat.WORKSHOP and not arsenal_claimed:
+		if players.any(func(p): return not p.down and p.position.x >= bubble_puzzle.position.x - 260):
+			workshop_radio.say("workshop", "DRA. AMANDA", "rápido! vamos usar o material de emergencia e melhorar nossos equipamentos!")
 	if beat == Beat.KING:
 		hp_trail_hold = maxf(0.0, hp_trail_hold - dt)
 		if hp_trail_hold <= 0.0:
@@ -164,7 +199,7 @@ func _physics_process(dt: float) -> void:
 	_tick_arsenal(dt)
 	var exit_open := beat != Beat.WORKSHOP and beat != Beat.ASSAULT
 	east_gate.openness = move_toward(east_gate.openness, float(exit_open), dt * 2.6)
-	var assault_open := beat != Beat.ASSAULT
+	var assault_open := beat != Beat.ASSAULT and _weapons_ready()
 	west_gate.openness = move_toward(west_gate.openness, float(assault_open), dt * 2.8)
 	king_gate.openness = move_toward(king_gate.openness, float(beat not in [Beat.KING, Beat.CAPTURE, Beat.SEAL, Beat.END]), dt * 2.8)
 	for i in sector_gates.size():
@@ -177,6 +212,7 @@ func _physics_process(dt: float) -> void:
 		if spawn_delay <= 0.0:
 			if beat == Beat.ASSAULT: _start_next_assault()
 			else: _sewer_wave()
+	_sync_progress_barrier()
 
 func ultimate_camera(kind: String) -> void:
 	if SceneFx.reduced_motion: return
@@ -189,11 +225,12 @@ func _update_camera(dt: float) -> void:
 	var camera: Camera2D = $Camera2D
 	camera_kick_left = maxf(0.0, camera_kick_left - dt)
 	var progress := 1.0 - camera_kick_left / camera_kick_length
-	camera.zoom = Vector2.ONE * (1.0 + sin(PI * progress) * camera_kick_power)
-	var target := clampf(camera_center().x, 320.0, camera_max_x)
-	if beat == Beat.ASSAULT: target = 954
+	var zoom := minf(EXPLORE_ZOOM, 600.0 / (room_right - KING_WEST)) if beat in [Beat.KING, Beat.CAPTURE] else EXPLORE_ZOOM
+	camera.zoom = Vector2.ONE * zoom * (1.0 + sin(PI * progress) * camera_kick_power)
+	var target := clampf(camera_center().x, 320.0 / zoom, world_limit - 320.0 / zoom)
+	if beat == Beat.ASSAULT: target = (WAVE_WEST + WAVE_EAST) * 0.5
 	elif beat == Beat.SEWER_WAVES: target = SECTORS[sector][3]
-	elif beat in [Beat.KING, Beat.CAPTURE]: target = camera_max_x
+	elif beat in [Beat.KING, Beat.CAPTURE]: target = (KING_WEST + room_right) * 0.5
 	camera.position.x = lerpf(camera.position.x, target, minf(1.0, dt * 5.0))
 	keep_living_players_in_view(camera.position.x, 301.0 / camera.zoom.x)
 
@@ -208,6 +245,7 @@ func _contain_enemies() -> void:
 		enemy.position.y = maxf(enemy.position.y, floor_min + 4.0)
 
 func _begin_assault() -> void:
+	if not _weapons_ready(): return
 	beat = Beat.ASSAULT
 	room_left = WAVE_WEST
 	spawn_delay = 0.65
@@ -220,11 +258,11 @@ func _start_next_assault() -> void:
 		room_left = 36.0
 		open_limit = SECTORS[0][2]
 		$HUD/TravelTime.text = ""
-		_burst(Vector2(1141, 228), Color("94ffe6"), 1.6)
+		_burst(Layout.point(Vector2(1141, 228)), Color("94ffe6"), 1.6)
 		return
 	var positions: Array = ASSAULTS[assault]
 	for i in positions.size():
-		_spawn_germ(positions[i], i == 1 or (assault == 1 and i == 4), assault == 1)
+		_spawn_germ(Layout.point(positions[i]), i == 1 or (assault == 1 and i == 4), assault == 1)
 	assault += 1
 	remaining = positions.size()
 	$HUD/TravelTime.text = "%d/%d" % [assault, ASSAULTS.size()]
@@ -246,7 +284,7 @@ func _sewer_wave() -> void:
 		_open_next_sector()
 		return
 	var center: float = SECTORS[sector][3]
-	var slots := [Vector2(-146, 250), Vector2(144, 308), Vector2(122, 240), Vector2(-145, 312)]
+	var slots := [Vector2(-246, 218), Vector2(244, 308), Vector2(202, 240), Vector2(-235, 312)]
 	if assault == 1 or sector == 1: slots.append(Vector2(63, 273))
 	for i in slots.size():
 		_spawn_germ(Vector2(center, 0) + slots[i], i == (2 if assault == 0 else 0), assault == 1)
@@ -283,14 +321,14 @@ func _open_next_sector() -> void:
 func _spawn_flyers(center: float) -> void:
 	if sector != 0:
 		var diver = YellowFlyer.instantiate()
-		diver.position = Vector2(center + 138, 246 if assault == 0 else 302)
+		diver.position = Vector2(center + 228, 221 if assault == 0 else 302)
 		diver.dive_after = 3.2
 		$Actors.add_child(diver)
 		remaining += 1
 	if sector == 0 and assault == 0: return
 	for i in 2:
 		var flyer = Flyers.instantiate()
-		flyer.position = Vector2(center + 174 - i * 115, 254 + i * 53)
+		flyer.position = Vector2(center + 264 - i * 215, 224 + i * 83)
 		flyer.speed = 166 + assault * 19
 		$Actors.add_child(flyer)
 		remaining += 1
@@ -340,6 +378,26 @@ func _begin_king(save_checkpoint := true) -> void:
 	_burst(king.position - Vector2(0, 39), Color("ffe8a1"), 2.0)
 	start_camera_shake(4, 0.25)
 
+func _start_king_chapter() -> void:
+	arsenal_claimed = true
+	bubble_puzzle.solved = true
+	bubble_puzzle.hide_hints()
+	clean_sample = true
+	for i in players.size():
+		var player = players[i]
+		if player.equipped_weapon == "none": player.equip_weapon("brush" if i == 0 else "bubbles")
+		player.weapon_upgraded = true
+		player.hp = player.max_hp
+		player.energy = 100.0
+		player.down = false
+		player.healing_flasks = maxi(player.healing_flasks,5)
+	_skip_arrival(Layout.point(Vector2(3554,268)),Layout.point(Vector2(3589,307)))
+	$Camera2D.position.x = (KING_WEST+room_right)*0.5
+	$Camera2D.zoom = Vector2.ONE*minf(EXPLORE_ZOOM,600.0/(room_right-KING_WEST))
+	open_limit = room_right
+	_sync_progress_barrier()
+	_begin_king()
+
 func _restore_king_checkpoint() -> void:
 	var checkpoint: Dictionary = get_tree().get_meta(BOSS_CHECKPOINT, {})
 	if checkpoint.is_empty(): return
@@ -349,8 +407,8 @@ func _restore_king_checkpoint() -> void:
 	arsenal_claimed = bool(checkpoint.upgraded)
 	bubble_puzzle.solved = true
 	for player in players: player.weapon_upgraded = arsenal_claimed
-	_skip_arrival(Vector2(3554, 268), Vector2(3589, 307))
-	$Camera2D.position.x = camera_max_x
+	_skip_arrival(Layout.point(Vector2(3554, 268)), Layout.point(Vector2(3589, 307)))
+	$Camera2D.position.x = (KING_WEST + room_right) * 0.5
 	open_limit = room_right
 	east_gate.openness = 1.0
 	king_gate.openness = 0.0
@@ -387,8 +445,8 @@ func _king_reinforcements() -> void:
 	ultimate_camera("solar")
 	_burst(king.position - Vector2(0, 54), Color("ffb871"), 3.4)
 	start_camera_shake(6, 0.31)
-	_spawn_germ(Vector2(3554, 307), false, true)
-	_spawn_germ(Vector2(3942, 242), false, true)
+	_spawn_germ(Layout.point(Vector2(3554, 307)), false, true)
+	_spawn_germ(Layout.point(Vector2(3942, 242)), false, true)
 
 func _ready_capture() -> void:
 	beat = Beat.CAPTURE
@@ -424,52 +482,26 @@ func interact(player, dt: float) -> void:
 		bubble_puzzle.adjust(bubble_puzzle.nearby_spring(player.global_position))
 
 func _seal_king(player) -> void:
-	$Camera2D.zoom = Vector2.ONE
+	if beat != Beat.CAPTURE or not clean_sample: return
 	clean_sample = false
 	GameAudio.effect("jar", player.global_position)
 	beat = Beat.SEAL
 	controls_locked = true
 	capture_hint.hide()
 	bubble_puzzle.hide_hints()
-	seal_bottle_start = player.global_position - Vector2(0, 37)
-	seal_king_start = king.global_position
-	seal_target = jar.global_position - Vector2(0, 36)
-	jar.get_node("Bottle").global_position = seal_bottle_start
-	jar.get_node("Indicator").hide()
-	for teammate in players:
-		teammate.attack_time = 0
-		teammate.specials.cancel()
-		teammate.sprite.play(teammate.equipped_weapon + "_idle")
+	finale = Finale.new()
+	add_child(finale)
+	finale.begin(self,player)
 
 func _animate_seal(dt: float) -> void:
-	seal_age += dt
-	var power := smoothstep(0.28, 1.10, seal_age)
-	var bottle: Sprite2D = jar.get_node("Bottle")
-	bottle.global_position = seal_bottle_start.lerp(seal_target, smoothstep(0.0, 0.32, seal_age))
-	king.position = seal_king_start.lerp(seal_target + Vector2(0, 49.0 * (1.0 - power)), power)
-	king.sprite.scale = Vector2(1.45, 1.17) * maxf(0.02, 1.0 - power)
-	king.modulate.a = 1.0 - smoothstep(0.88, 1.12, seal_age)
-	bottle.rotation = sin(seal_age * 21.0) * power * (1.0 - power) * 0.6 if not SceneFx.reduced_motion else 0.0
-	if seal_age < SEAL_SECONDS: return
-	king.hide()
-	bottle.modulate = Color("a6ff93")
-	bottle.rotation = 0
-	GameAudio.effect("confirm")
-	jar.get_node("Captured").show()
-	$Actors/Tiburcio.position = king_floor(jar.position + Vector2(-74.0 if jar.position.x > KING_WEST + 292 else 74.0, 4.0))
-	captive.hide()
-	$Actors/Tiburcio.show()
-	_burst($Actors/Tiburcio.position - Vector2(0, 30), Color("bbfff4"), 1.35)
-	$HUD/TravelTime.text = ""
-	$HUD/Finale.show()
-	$HUD/Finale/Panel/Content/Menu.grab_focus()
-	victory = true
-	beat = Beat.END
-	GameAudio.music("ending", false)
+	if finale != null: finale.advance(dt)
 
 func _return_to_menu() -> void:
 	Chapters.reset(get_tree())
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+func _weapons_ready() -> bool:
+	return arsenal_claimed and players.all(func(p): return p.weapon_upgraded)
 
 func _tick_arsenal(dt: float) -> void:
 	if beat >= Beat.KING or arsenal_claimed or not bubble_puzzle.solved: return
@@ -502,6 +534,7 @@ func _tick_arsenal(dt: float) -> void:
 		avatar.energy = 100.0
 		forge_weapons[i].queue_free()
 		_burst(avatar.global_position + Vector2(0, -28 - avatar.jump_height), glow, 1.35)
+	open_limit = WAVE_EAST
 	start_camera_shake(2, 0.16)
 
 func spawn_impact(_kind: int, contact: Vector2, direction: float) -> Node2D:
@@ -521,7 +554,7 @@ func royal_vents() -> Array:
 
 func drain_active(vent) -> bool:
 	if vent.position.x > KING_WEST: return beat == Beat.KING and king.phase == 2
-	if vent.position.x < 1160: return beat == Beat.ASSAULT
+	if vent.position.x < Layout.x(1160): return beat == Beat.ASSAULT
 	return beat == Beat.SEWER_WAVES and vent.position.x > room_left and vent.position.x < open_limit
 
 func _avoid_jet(player, destination: Vector2) -> Variant:

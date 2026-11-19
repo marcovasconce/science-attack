@@ -5,6 +5,9 @@ const BEAM_WINDUP := 0.25
 const BEAM_SECONDS := 3.0
 const BEAM_INTERVAL := 0.15
 const BEAM_DAMAGE := 30
+const QUICK_WINDUP := 0.12
+const QUICK_SECONDS := 0.70
+const QUICK_INTERVAL := 0.10
 const SOLAR_PULSES := [Vector2(0.42, 0), Vector2(0.66, 112), Vector2(0.90, 224)]
 const SOLAR_DAMAGE := [135, 150, 185]
 const NOVA_PULSES := [Vector2(0.30, 0), Vector2(0.50, -34), Vector2(0.70, 34)]
@@ -53,10 +56,13 @@ func try_activate() -> bool:
 	kind = player.equipped_weapon+str(level)
 	if level == 2 and player.weapon_upgraded:
 		kind = "solar" if player.equipped_weapon == "brush" else "nova"
+	elif level == 1 and player.weapon_upgraded and player.equipped_weapon == "bubbles":
+		kind = "bubbles_quick"
 	GameAudio.effect("solar" if player.equipped_weapon == "brush" else "nova", player.global_position)
-	duration = {"brush1":6.0,"brush2":1.4,"bubbles1":1.1,"bubbles2":BEAM_WINDUP+BEAM_SECONDS,"solar":1.4,"nova":1.08}[kind]
+	duration = {"brush1":6.0,"brush2":1.4,"bubbles1":1.1,"bubbles2":BEAM_WINDUP+BEAM_SECONDS,"solar":1.5,"nova":1.08,"bubbles_quick":QUICK_WINDUP+QUICK_SECONDS}[kind]
 	elapsed = 0
 	next_pulse = BEAM_WINDUP+0.1 if kind == "bubbles2" else 0.0
+	if kind == "bubbles_quick": next_pulse = QUICK_WINDUP+QUICK_INTERVAL
 	stage = 0
 	cast_facing = player.facing
 	beam_length = 0
@@ -82,7 +88,7 @@ func tick(dt: float) -> void:
 		_tick_upgraded_ultimate(end)
 	elif kind == "brush1":
 		while next_pulse < end and next_pulse < duration:
-			player.arena.special_area(player,player.global_position,86,38,10)
+			player.arena.special_area(player,player.global_position,128 if player.weapon_upgraded else 86,58 if player.weapon_upgraded else 38,10)
 			next_pulse += 0.4
 	elif kind == "brush2":
 		if stage == 0 and end >= 0.5:
@@ -96,11 +102,12 @@ func tick(dt: float) -> void:
 	elif kind == "bubbles1" and stage == 0 and end >= 0.35:
 		player.arena.spawn_special_bubble(player,0,true)
 		stage = 1
-	elif kind == "bubbles2":
+	elif kind in ["bubbles2","bubbles_quick"]:
 		beam_length = player.arena.water_beam_length(player,cast_facing)
+		if kind == "bubbles_quick": beam_length = minf(420,beam_length)
 		while next_pulse <= end+0.000001 and next_pulse < duration-0.000001:
 			player.arena.water_beam_damage(player,cast_facing,beam_length,BEAM_DAMAGE)
-			next_pulse += BEAM_INTERVAL
+			next_pulse += QUICK_INTERVAL if kind == "bubbles_quick" else BEAM_INTERVAL
 	elapsed = end
 	player.combo_idle_time = 0
 	if elapsed+0.000001 >= duration:
@@ -138,23 +145,25 @@ func cancel() -> void:
 	_sync_water()
 
 func locks_aim() -> bool:
-	return active and kind in ["bubbles2", "solar", "nova"]
+	return active and kind in ["bubbles2", "bubbles_quick", "solar", "nova"]
 
 func _sync_water() -> void:
 	if water_display == null: return
-	var show_water := active and kind in ["brush2","bubbles2","solar","nova"]
+	var show_water: bool = active and (kind in ["brush2","bubbles2","bubbles_quick","solar","nova"] or (kind == "brush1" and player.weapon_upgraded))
 	water_display.visible = show_water
 	water_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if show_water else SubViewport.UPDATE_DISABLED
 	if not show_water: return
-	water_canvas.mode = kind
+	water_canvas.mode = "bubbles2" if kind == "bubbles_quick" else kind
 	water_canvas.use_arcade_effects = player.arena.use_arcade_effects
 	water_canvas.time = elapsed
+	if kind == "bubbles_quick":
+		water_canvas.time = elapsed/QUICK_WINDUP*BEAM_WINDUP if elapsed < QUICK_WINDUP else BEAM_WINDUP+(elapsed-QUICK_WINDUP)*BEAM_SECONDS/QUICK_SECONDS
 	water_canvas.beam_length = beam_length
 	if kind == "nova":
 		water_canvas.pulses = NOVA_PULSES
 	elif kind == "solar":
 		water_canvas.pulses = SOLAR_PULSES
-	if kind in ["bubbles2", "nova"]:
+	if kind in ["bubbles2", "bubbles_quick", "nova"]:
 		water_display.scale = Vector2(cast_facing*2,2)
 		water_display.position = Vector2(-32*cast_facing,-128-player.jump_height)
 	elif kind == "solar":
@@ -166,11 +175,12 @@ func _sync_water() -> void:
 	water_canvas.queue_redraw()
 
 func animation_name() -> String:
-	return {"brush1":"brush_spin","brush2":"brush_ultimate","bubbles1":"bubbles_special","bubbles2":"bubbles_ultimate","solar":"brush_ultimate","nova":"bubbles_ultimate"}.get(kind,"")
+	return {"brush1":"brush_spin","brush2":"brush_ultimate","bubbles1":"bubbles_special","bubbles2":"bubbles_ultimate","bubbles_quick":"bubbles_ultimate","solar":"brush_ultimate","nova":"bubbles_ultimate"}.get(kind,"")
 
 func animation_frame(count: int) -> int:
 	if kind == "brush1": return int(elapsed*20)%count
 	if kind == "bubbles2": return int(elapsed*18)%count
+	if kind == "bubbles_quick": return int(elapsed*28)%count
 	if kind == "nova": return mini(count - 1, stage * 2 + int(elapsed * 16) % 2)
 	if kind == "solar": return mini(count - 1, int(elapsed / 0.84 * count))
 	return mini(count-1,int(elapsed/maxf(duration,0.01)*count))

@@ -144,7 +144,8 @@ static func _paint_spin(canvas: CanvasItem, body: Texture2D, index: int, foot: V
 		for i in 13:
 			var a := angle-PI*0.85+i*PI*0.85/12.0
 			points.append((center+Vector2(cos(a)*(33+ring*3),sin(a)*(20+ring*2))).round())
-		canvas.draw_polyline(points,Color("f0ffff") if ring == 0 else Color("48d3e3"),2 if ring == 0 else 1,false)
+		var tint := (Color("fff0bd") if ring == 0 else Color("ff9638")) if overcharged else (Color("f0ffff") if ring == 0 else Color("48d3e3"))
+		canvas.draw_polyline(points,tint,2 if ring == 0 else 1,false)
 	var weapon_angle := atan2(sin(angle)*0.65,cos(angle))
 	if sin(angle)<0: _spin_brush(canvas,grip,weapon_angle,pink,overcharged)
 	var turn := (0.5+absf(cos(angle))*0.5)*(-1 if cos(angle)<0 else 1)
@@ -154,7 +155,7 @@ static func _paint_spin(canvas: CanvasItem, body: Texture2D, index: int, foot: V
 	if sin(angle)>=0: _spin_brush(canvas,grip,weapon_angle,pink,overcharged)
 	for i in 3:
 		var a := angle-i*0.4
-		canvas.draw_rect(Rect2((center+Vector2(cos(a)*38,sin(a)*24)).round(),Vector2(2,2)),Color("d9ffff"))
+		canvas.draw_rect(Rect2((center+Vector2(cos(a)*38,sin(a)*24)).round(),Vector2(2,2)),Color("ffd37c") if overcharged else Color("d9ffff"))
 
 static func _spin_brush(canvas: CanvasItem, grip: Vector2, angle: float, pink: bool, overcharged: bool) -> void:
 	canvas.draw_set_transform(grip,angle)

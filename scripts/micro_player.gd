@@ -204,9 +204,10 @@ func _physics_process(dt: float) -> void:
 		if equipped_weapon != "bubbles" and attack_contact_active():
 			if finisher_pending:
 				finisher_pending = false
-				var flash: Node2D = arena.spawn_impact(1, global_position + Vector2(facing * 42, -26), facing)
-				flash.scale = Vector2(3.2, 1.45)
-				flash.modulate = BRUSH_UPGRADE_COLOR
+				var flash = preload("res://scripts/combat_ground_wave.gd").new()
+				flash.brush = true
+				arena.get_node("ImpactEffects").add_child(flash)
+				flash.global_position = global_position + Vector2(facing * 90, -6-jump_height)
 				arena.start_camera_shake(4, 0.22)
 			arena.strike(self,combo,hit_targets)
 		var continue_brush := equipped_weapon == "brush" and attack_held
@@ -388,6 +389,9 @@ func melee_reach() -> float:
 	if equipped_weapon != "brush": return 65.0
 	if weapon_upgraded: return 188.0 if combo == 3 else 150.0
 	return 112.0
+
+func melee_origin() -> Vector2:
+	return global_position + Vector2(facing * 30.0,0) if weapon_upgraded and equipped_weapon == "brush" and combo == 3 and not airborne_attack else global_position
 
 func melee_damage(combo_index: int) -> int:
 	if equipped_weapon == "brush":

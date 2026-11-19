@@ -8,6 +8,9 @@ const MAX_HP := 10000
 const PHASE_MARK := 5300
 const CRASH_DEPTH := 33.0
 const RoyalBubble = preload("res://scripts/royal_bubble.gd")
+const POSES = preload("res://assets/enemies/king_combat_poses.png")
+const GroundWave = preload("res://scripts/combat_ground_wave.gd")
+const FEET := [281,276,276,276,273,281,274,273,272,267,272,272,258,257,258,258]
 const VACUUM_RADIUS := Vector2(98, 36)
 enum State { DORMANT, APPROACH, WINDUP, ATTACK, RECOVER, ROAR, TIRED }
 enum Move { CRASH, BUBBLE, VACUUM, PRESSURE, DOUBLE_CRASH }
@@ -29,11 +32,21 @@ var marks: Array[Vector2] = []
 var next_burst := 0
 var pressure_vents: Array = []
 var first_crash_done := false
+var slam_age := 99.0
+var defeat_age := 0.0
+var crash_start := Vector2.ZERO
 @onready var charge: Sprite2D = $Charge
 @onready var arena = get_tree().get_first_node_in_group("arena")
 @onready var sprite: Sprite2D = $Sprite
 @onready var lane: TextureRect = $Warning/Lane
 @onready var stamps: Array[Sprite2D] = [$Warning/First, $Warning/Second, $Warning/Third]
+
+func _ready() -> void:
+	sprite.texture = POSES
+	sprite.hframes = 4
+	sprite.vframes = 4
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_pose()
 
 func begin() -> void:
 	GameAudio.effect("laugh")
@@ -43,9 +56,14 @@ func begin() -> void:
 	health_changed.emit(hp, MAX_HP)
 
 func _physics_process(dt: float) -> void:
-	if arena.controls_locked or state in [State.DORMANT, State.TIRED]: return
+	if state == State.TIRED:
+		defeat_age += dt
+		_pose()
+		return
+	if arena.controls_locked or state == State.DORMANT: return
 	clock += dt
 	animation_age += dt
+	slam_age += dt
 	hurt_time = maxf(0.0, hurt_time - dt)
 	match state:
 		State.APPROACH:
@@ -60,7 +78,8 @@ func _physics_process(dt: float) -> void:
 		State.WINDUP:
 			if clock >= (0.84 if phase == 1 else 0.64): _attack()
 		State.ATTACK:
-			if move == Move.VACUUM: _tick_vacuum(dt)
+			if move == Move.CRASH: _tick_crash()
+			elif move == Move.VACUUM: _tick_vacuum(dt)
 			elif move == Move.PRESSURE: _tick_pressure()
 			elif move == Move.DOUBLE_CRASH: _tick_double_crash()
 		State.RECOVER:
@@ -110,12 +129,10 @@ func _attack() -> void:
 	_set_state(State.ATTACK)
 	match move:
 		Move.CRASH:
-			position = crash_at
-			_hit_area(position, Vector2(125, CRASH_DEPTH), 19, 2.15)
-			_recover(0.28)
+			crash_start = position
 		Move.DOUBLE_CRASH:
 			first_crash_done = false
-			_tick_double_crash()
+			crash_start = position
 		Move.BUBBLE:
 			var orb := RoyalBubble.new()
 			orb.king = self
@@ -130,16 +147,27 @@ func _attack() -> void:
 		Move.PRESSURE:
 			next_burst = 1
 
+func _tick_crash() -> void:
+	position = crash_start.lerp(crash_at,smoothstep(0.0,0.14,clock))
+	if clock < 0.14: return
+	_hit_area(position,Vector2(125,CRASH_DEPTH),19,2.15)
+	_recover(0.28)
+
 func _tick_double_crash() -> void:
+	if not first_crash_done and clock < 0.14:
+		position = crash_start.lerp(marks[0],smoothstep(0.0,0.14,clock))
+		return
 	if not first_crash_done:
 		first_crash_done = true
 		position = marks[0]
 		stamps[0].hide()
 		_hit_area(position, Vector2(125, CRASH_DEPTH), 18, 2.4)
-	elif clock >= 0.84:
+	elif clock >= 0.98:
 		position = marks[1]
 		_hit_area(position, Vector2(125, CRASH_DEPTH), 22, 3.0)
 		_recover(0.9)
+	elif clock >= 0.72:
+		position = marks[0].lerp(marks[1],smoothstep(0.72,0.98,clock))
 
 func _tick_vacuum(dt: float) -> void:
 	for player in arena.players:
@@ -177,6 +205,14 @@ func _hit_area(at: Vector2, radius: Vector2, damage: int, size: float) -> void:
 		if player.down or player.jump_height > 20.0: continue
 		var offset: Vector2 = (player.position - at) / radius
 		if offset.length_squared() <= 1.0: player.take_hit(damage, at)
+	if move in [Move.CRASH,Move.DOUBLE_CRASH]:
+		slam_age = 0
+		var wave := GroundWave.new()
+		wave.radius = radius
+		arena.get_node("ImpactEffects").add_child(wave)
+		wave.global_position = at
+		arena.start_camera_shake(5,0.26)
+		return
 	var splash: Node2D = arena.spawn_impact(1, at - Vector2(0, 20.0), face)
 	splash.scale = Vector2(size * 1.4, size)
 	splash.modulate = Color("91ffee") if move == Move.VACUUM else Color("ffd066")
@@ -212,8 +248,31 @@ func _set_state(next: State) -> void:
 
 func _pose() -> void:
 	sprite.flip_h = face < 0.0
-	sprite.position.y = -69.0 - sin(animation_age * 7.0) * (0.0 if SceneFx.reduced_motion else 3.0)
-	sprite.scale = Vector2(1.73, 1.73)
+	var pose := int(animation_age*4)%2
+	if state == State.TIRED:
+		pose = 12 if defeat_age < 0.18 else (13 if defeat_age < 0.42 else (14 if defeat_age < 0.7 else 15))
+	elif slam_age < 0.36:
+		pose = 5 if slam_age < 0.22 else 6
+	elif state == State.WINDUP:
+		match move:
+			Move.CRASH, Move.DOUBLE_CRASH: pose = 2 if clock < 0.3 else 3
+			Move.BUBBLE: pose = 7
+			Move.VACUUM: pose = 8
+			Move.PRESSURE: pose = 9
+	elif state == State.ATTACK:
+		match move:
+			Move.CRASH: pose = 4
+			Move.DOUBLE_CRASH: pose = 4 if clock < 0.14 or clock >= 0.86 else 3
+			Move.VACUUM: pose = 8
+			Move.PRESSURE: pose = 9
+	elif state == State.ROAR: pose = 10
+	elif state == State.RECOVER and move == Move.BUBBLE and clock < 0.3: pose = 7
+	if hurt_time > 0 and state != State.TIRED: pose = 11
+	sprite.frame = pose
+	sprite.offset = Vector2(0,POSES.get_height()/8.0-FEET[pose])
+	sprite.position = Vector2(0,-3)
+	if state == State.APPROACH and not SceneFx.reduced_motion: sprite.position.y -= sin(animation_age*7)*2
+	sprite.scale = Vector2.ONE*0.55
 	sprite.rotation = 0.0
 	sprite.modulate = Color("ffc07d") if phase == 2 else Color.WHITE
 	if state == State.WINDUP:
@@ -223,18 +282,7 @@ func _pose() -> void:
 		if move == Move.BUBBLE:
 			charge.position.x = face * 53.0
 			charge.scale = Vector2.ONE * lerpf(0.25, 1.55, clampf(clock / 0.7, 0.0, 1.0))
-		sprite.rotation = -face * (0.18 if move == Move.BUBBLE else 0.12)
-		sprite.scale.y *= 0.90 if move == Move.BUBBLE else 1.08
-		sprite.position.y -= minf(23.0, clock * 38.0) if move in [Move.CRASH, Move.DOUBLE_CRASH] else 0.0
-	elif state == State.ATTACK and move == Move.VACUUM:
-		sprite.scale = Vector2(1.83, 1.62) + Vector2(0.10, -0.10) * sin(clock * 23.0)
-		sprite.rotation = face * 0.12
-	elif state == State.RECOVER:
-		sprite.scale.y *= 0.92
-		sprite.modulate = Color("fff0a2")
-	elif state == State.ROAR:
-		sprite.position.y -= 17.0 * sin(clampf(clock / 1.12, 0.0, 1.0) * PI)
-		sprite.modulate = Color("f7ce9f")
+	if state == State.TIRED: sprite.modulate = Color("cad4b9")
 	if hurt_time > 0.0: sprite.modulate = Color(1.8, 1.4, 1.15)
 
 func can_be_hit(_height: float) -> bool:
@@ -257,10 +305,9 @@ func take_hit(damage: int, _direction: float) -> void:
 		dead = true
 		_clear_marks()
 		_set_state(State.TIRED)
-		sprite.rotation = -0.20
-		sprite.scale = Vector2(1.45, 1.17)
-		sprite.position.y = -49
-		sprite.modulate = Color("c8d2b1")
+		defeat_age = 0
+		hurt_time = 0
+		_pose()
 		exhausted.emit()
 	health_changed.emit(hp, MAX_HP)
 

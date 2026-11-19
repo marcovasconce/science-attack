@@ -35,6 +35,7 @@ func _ready() -> void:
 	for i in Chapters.LOWER_SECTORS.size(): menu.get_popup().add_item(Chapters.LOWER_SECTORS[i],20+i)
 	menu.get_popup().add_separator("COLMEIA")
 	menu.get_popup().add_item("Oficina e batalha final",30)
+	menu.get_popup().add_item(Chapters.KING_TITLE,Chapters.KING_CHAPTER)
 	menu.get_popup().add_separator()
 	menu.get_popup().add_item("Menu principal",99)
 	menu.get_popup().id_pressed.connect(go_to_phase)

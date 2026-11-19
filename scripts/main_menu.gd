@@ -122,6 +122,7 @@ func _build_chapters() -> void:
 	_add_entry("Elevador: sobreviva à descida", 4)
 	_add_entry("Colmeia: chegada", 5)
 	_add_entry("Colmeia: oficina e batalha final", 30)
+	_add_entry(Chapters.KING_TITLE, Chapters.KING_CHAPTER)
 	chapter_list.item_activated.connect(func(index: int): _open_chapter(chapter_ids[index]))
 	_action(chapter_panel, "Voltar", Rect2(20, 266, 125, 30), hide_chapters)
 	_action(chapter_panel, "Jogar capítulo", Rect2(267, 266, 179, 30), _play_selected_chapter)

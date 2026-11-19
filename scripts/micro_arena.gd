@@ -102,26 +102,28 @@ func strike(player, combo: int, targets: Array) -> void:
 	var upgraded: bool = brush and player.weapon_upgraded
 	var depth := 42.0 if upgraded else (28.0 if brush else 22.0)
 	var rear_reach := 68.0 if upgraded and combo == 3 else 12.0
+	var origin: Vector2 = player.melee_origin()
 	for enemy in get_tree().get_nodes_in_group("germs"):
 		if enemy in targets or enemy.dead: continue
 		if not enemy_can_be_hit(enemy,28.0+player.jump_height): continue
 		if player.ai_controlled and tutorial.step<7: continue
-		var offset: Vector2=enemy.position-player.position
+		var offset: Vector2=enemy.global_position-origin
 		if absf(offset.y) < depth and offset.x * player.facing > -rear_reach and offset.x * player.facing < player.melee_reach():
 			targets.append(enemy)
 			var assisted: bool=players[0].attack_time>0 and players[1].attack_time>0 and players[0].position.distance_to(players[1].position)<100
-			var direction: float = signf(offset.x) if upgraded and not is_zero_approx(offset.x) else player.facing
+			var relative_x: float = enemy.global_position.x-player.global_position.x
+			var direction: float = signf(relative_x) if upgraded and not is_zero_approx(relative_x) else player.facing
 			damage_enemy(player,enemy,player.melee_damage(combo)+(15 if assisted else 0),direction,enemy.global_position+Vector2(-direction*12,-24))
 	if tutorial.step<4: return
 	for prop in breakable_props():
 		if prop.broken or prop in targets: continue
-		var offset: Vector2=prop.position-player.position
+		var offset: Vector2=prop.global_position-origin
 		if absf(offset.y) < maxf(depth, 24.0) and offset.x * player.facing > -(rear_reach if upgraded else 10.0) and offset.x * player.facing < player.melee_reach():
 			targets.append(prop)
 			prop.take_hit(player.melee_damage(combo),player.facing,player)
 	for dummy in get_tree().get_nodes_in_group("training_dummies"):
 		if not encounter.unlocked or dummy in targets: continue
-		var offset: Vector2 = dummy.global_position-player.global_position
+		var offset: Vector2 = dummy.global_position-origin
 		if absf(offset.y) < maxf(depth, 28.0) and offset.x * player.facing > -rear_reach and offset.x * player.facing < player.melee_reach():
 			targets.append(dummy)
 			damage_training(player,dummy,player.melee_damage(combo),player.facing)
