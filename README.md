@@ -1,6 +1,8 @@
 # Science Attack
 
-Jogo Godot 4.7 com abertura e duas fases conectadas de beat 'em up cooperativo.
+Beat 'em up microscópico feito em Godot 4.7. Jogue sozinho com Amanda na IA ou em dupla local.
+
+[Baixar o jogo para Windows](https://github.com/marcovasconce/science-attack/releases/latest)
 
 ## Elevador cooperativo e germes
 
@@ -23,18 +25,34 @@ Depois do carregamento, as portas do elevador deslizam e liberam a saída pela f
 Para abrir a fase diretamente no editor, use `scenes/gameplay/tabletop_stage.tscn` e F6; nesse caso, Max começa com escova e Amanda com bolhas. Arte, prompts e verificações: `docs/tabletop-stage-art.md`. Prévia animada: `art/previews/tabletop_stage.gif`.
 
 ## Jogar
-Abra `project.godot` e pressione F5. Enter ou clique avança as falas; Espaço pausa a abertura e F2 repete. Max e Amanda entram correndo juntos, seguem às cápsulas e dormem em tamanho normal. A câmera escurece e abre a fase dos microavatares, controlados remotamente pelos cientistas.
+Abra `project.godot` e pressione F5. Marque **Jogar em dupla** no menu para dois jogadores no mesmo teclado. Enter ou clique avança as falas, Espaço pausa a abertura e F2 repete. Max e Amanda entram correndo juntos, seguem às cápsulas e dormem em tamanho normal. A câmera escurece e abre a fase dos microavatares, controlados remotamente pelos cientistas.
 
 - P1: WASD para mover, Espaço para saltar, F para combo, Shift para esquivar, E para construir/interagir, Q para especial e R para usar um frasco de cura.
 - P2: Enter alterna IA e controle local; setas para mover, J para combo, K para saltar, L para esquivar, U para construir/interagir, I para especial e O para usar um frasco de cura.
 - F1 abre a ajuda de teclado e pausa o combate enquanto a ajuda está aberta.
 - F2 reinicia a fase durante o jogo.
+- Controle no PC com layout reconhecido pelo Godot. Direcional ou analógico esquerdo move. **A/✕** pula, **X/□** bate, **B/○** desvia, **Y/△** usa o especial, **RB/R1** interage e **LB/L1** cura. O menu usa o botão de confirmar.
+- O primeiro controle assume Max. O segundo entra com **Menu/Options**. Em uma dupla com teclado e controle, ative **Jogar em dupla** e inicie com o teclado, ou use **Menu/Options** no controle durante uma partida solo iniciada pelo teclado. O HUD segue o último dispositivo usado por cada jogador. O primeiro jogador abre a ajuda com **Menu/Options**. Com a ajuda aberta ou com os dois caídos, **View/Share/Create** reinicia.
 
-O combate permite movimento lateral e em profundidade, combo de três golpes, ataques no salto, esquiva com invulnerabilidade, recuo e bônus de dano ao atacar em dupla. Um parceiro sem vida pode ser reanimado mantendo a ação cooperativa perto dele. O segundo avatar acompanha e combate por IA até a entrada do segundo jogador.
+O combate permite movimento lateral e em profundidade, combo de três golpes, ataques no salto, esquiva com invulnerabilidade, recuo e bônus de dano ao atacar em dupla. Um parceiro sem vida pode ser reanimado mantendo a ação cooperativa perto dele. O segundo avatar acompanha e combate por IA até a entrada do segundo jogador. A abertura aceita **Backspace**, **B** ou **○** para pular. **Esc** abre o menu de pausa durante a abertura e as fases, com opções para continuar ou voltar ao menu principal. No terminal e no painel de equipamentos, **Esc** fecha a interface em uso.
 
 O primeiro estágio é um tutorial guiado. Os avatares despertam deitados numa cutscene de 3,6 segundos antes de o controle ser liberado. A IA orienta a dupla pelo comunicador no HUD, com retrato azul e uma dica por vez: andar, pular e aterrissar, desviar, quebrar caixas, combater um germe e construir em dupla. Durante as lições ele usa o comunicador; após limpar o primeiro setor, a dupla encontra Tibúrcio Ung pessoalmente no posto de apoio. As lições exigem ações de um jogador humano; o parceiro automático não as completa sozinho. Setas indicam os alvos. A ajuda completa só aparece com F1.
 
-Quebre caixas e derrote germes para coletar parafusos pixelados. Reúna a dupla na margem do rombo, junto ao marcador de parafuso, e segure E/U para montar a ponte metálica com oito parafusos. Atravesse, vença a segunda onda e siga a seta para encontrar Tibúrcio Ung e o robô de apoio. Equipe a dupla e use o elevador para chegar à bancada do laboratório. Esta entrega contém duas fases conectadas; ainda não contém multiplayer online ou suporte a controle.
+Quebre caixas e derrote germes para coletar parafusos pixelados. Reúna a dupla na margem do rombo, junto ao marcador de parafuso, e segure E/U para montar a ponte metálica com oito parafusos. Atravesse, vença a segunda onda e siga a seta para encontrar Tibúrcio Ung e o robô de apoio. Equipe a dupla e use o elevador para chegar à bancada do laboratório. Ao terminar a bancada, o próximo elevador desce para o setor inferior. A campanha passa pelo tutorial, pela bancada e pelo setor inferior até chegar à Colmeia. A dupla joga no mesmo PC.
+
+## Fase 2: setor inferior
+
+O cenário reaproveita o tutorial com tons verdes e gosma no elevador, atrás dos personagens. Rei Bactéria e Tibúrcio desacordado, com o olho fechado, formam uma única sprite de seis quadros: a boca mexe e a gosma estica, se solta e cai. Depois da fala e da fuga, um emblema sem fundo pisca por um segundo e começa uma onda de 48 voadoras. Ao terminar, o alerta se repete e chegam outras 80. Elas atravessam a tela, causam dano no contato e continuam voando; um ataque de qualquer arma as derrota. Vida, energia, frascos, equipamentos e modo cooperativo passam de uma fase para outra. F2 reinicia a abertura com os recursos da chegada.
+
+A IA mantém o foco nas voadoras que chegam pela frente e não persegue as que já passaram. Após as ondas, o caminho continua entre armários danificados, placas de risco biológico e computadores em chamas, com fogo e fumaça animados. Poças tóxicas causam dano ao pisar; desvie ou salte. O companheiro contorna as poças automaticamente. O computador perto da porta bloqueada é ativado com E/U: a câmera aproxima, o sistema inicializa e aparece um puzzle 3×3 usando a sprite original de Tibúrcio. Clique em duas peças para trocá-las, ou use WASD/setas e E/U. Esc sai sem perder as trocas. Montar a imagem abre a porta e libera a passagem.
+
+A porta é vista de perfil e o fogo usa doze quadros baseados na referência. Quando a porta acaba de abrir, chegam seis bactérias verdes, três vermelhas e três voadoras amarelas. As amarelas têm 195 de vida (verde: 130; vermelha: 260), voam alto e cospem bolas de gosma pixeladas. Pule e ataque para derrubá-las; depois da animação de queda, elas voam baixo por dez segundos e podem ser atingidas do chão. Se sobreviverem, voltam ao alto. A IA também pula para enfrentar esse inimigo. Prévia em `art/previews/yellow_flyer_knockdown.gif`; artes e prompts em `docs/lower-lab-combat-art.md`.
+
+Há nove caixas em posições sorteadas pelo corredor; cada uma tem 50% de chance de soltar um frasco de cura. Os enxames bloqueiam o avanço até terminar, o puzzle começa com todas as nove peças fora do lugar e Amanda dá uma dica rápida sobre as voadoras. O poço do elevador agora tem estrutura e trilhos contínuos.
+
+Depois da leva após o puzzle, pegue o sabão no armário de contorno amarelo com E/U e use E/U diante da gosma que bloqueia o caminho. A espuma limpa a passagem. Mais adiante, o Guardião do Rei surge com tremor e fala, fecha a arena e avança de escudo. Desvie da faixa marcada: cada impacto na parede faz cair três TNTs em posições aleatórias. Elas explodem após pousar ou ao serem atingidas; a explosão também fere o boss. A vida do guardião tem uma camada laranja e outra vermelha. Vencê-lo reabre a arena. Artes e prompts em `docs/lower-lab-finale-art.md`.
+
+Para testar diretamente, use **Capítulos → Chegada ao laboratório** no menu principal. Cena: `scenes/gameplay/lower_lab_stage.tscn`. Detalhes, assets e verificações em `docs/lower-lab-stage.md`; prompts da ferramenta imagegen integrada em `docs/lower-lab-art-prompts.md`. Capturas em `art/previews/lower_lab_*.png`.
 
 O objetivo permanece visível: **MONTE A PONTE**. As caixas metálicas cinzas fornecem parafusos, que saltam e pousam no chão. Com oito parafusos, aproxime-se da margem do rombo e segure E (ou U para P2). Os personagens executam uma animação de seis quadros enquanto os parafusos voam em arco até os encaixes. A ponte de aço aparece em três seções da esquerda para a direita; soltar a tecla pausa o trabalho, e é possível retomá-lo. O rombo bloqueia fisicamente toda a profundidade caminhável, inclusive durante salto e esquiva, até a ponte ficar pronta. A IA ajuda a montar e reanimar, mas não ataca a bactéria de treinamento; ela volta a combater após o tutorial.
 

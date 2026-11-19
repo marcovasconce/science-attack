@@ -73,9 +73,11 @@ func run() -> void:
 	check(not elevator.pads[1].occupied and not elevator.is_transitioning(),"An airborne player does not press a floor plate")
 	q.jump_height = 0
 	q.down = true
+	p.position.y += 25
 	tick(0.6)
-	check(not elevator.pads[1].occupied and not elevator.is_transitioning(),"A downed player cannot activate the lift")
+	check(not elevator.pads[1].occupied and not elevator.is_transitioning(),"A downed player cannot activate a plate by themselves")
 	q.down = false
+	p.position = left
 	arena.controls_locked = true
 	tick(1)
 	check(not elevator.is_transitioning(),"Pause cannot launch the elevator")

@@ -1,6 +1,7 @@
 extends Node2D
 const PART_SHEET = preload("res://assets/pickups/construction_bolts.png")
 const DROP_DURATION := 0.6
+const STAGING_POINT := Vector2(553, 288)
 const TARGETS := [Vector2(590,207), Vector2(592,299), Vector2(628,253), Vector2(654,207), Vector2(666,299), Vector2(690,253), Vector2(722,207), Vector2(746,299)]
 const SECTION_UNITS := [3, 6, 8]
 var snapped_units := 0
@@ -33,13 +34,13 @@ func _process(dt: float) -> void:
 
 func update_camera(dt: float, center: Vector2) -> void:
 	if arena.controls_locked: return
-	var active: bool = (arena.build_grace > 0 and not arena.built) or completion_hold > 0
+	var active: bool = (is_instance_valid(arena.bridge_builder) and arena.is_assembling(arena.bridge_builder)) or completion_hold > 0
 	camera_blend = move_toward(camera_blend, 1.0 if active else 0.0, dt * (2.8 if active else 1.8))
 	var weight := smoothstep(0.0, 1.0, camera_blend)
 	var camera: Camera2D = arena.get_node("Camera2D")
 	var progress: float = arena.build_progress / arena.BUILD_DURATION
 	# Frame both builders and the far end; pan gently as the bridge grows.
-	var target := Vector2(604 + progress * 18, 225)
+	var target := Vector2(604 + progress * 18, 204)
 	var normal := Vector2(clampf(center.x, 320, arena.camera_max_x), 180)
 	camera.position = normal.lerp(target, weight)
 	camera.zoom = Vector2.ONE * lerpf(1.0, 1.12, weight)
@@ -66,7 +67,7 @@ func sample(progress: float) -> void:
 		var age: float = section_ages[i]
 		deck.position = deck_origins[i] + Vector2(0, -sin(age * 23.0) * 5.0 * exp(-age * 10.0))
 		deck.modulate = Color.WHITE.lerp(Color(1.5, 1.65, 1.45), maxf(0.0, 1.0 - age / 0.22))
-		$Blueprint.get_child(i).visible = arena.tutorial.step >= 6 and arena.pieces >= 8 and not arena.built and completed_units < [3, 6, 8][i]
+		$Blueprint.get_child(i).visible = arena.tutorial.step >= 6 and arena.bridge_has_parts() and not arena.built and completed_units < SECTION_UNITS[i]
 	# The eight authored nodes supply the bridge; later drops remain on the floor.
 	while $Pieces.get_child_count() < arena.part_origins.size():
 		var extra := Sprite2D.new()
@@ -85,7 +86,10 @@ func sample(progress: float) -> void:
 		var target: Vector2 = TARGETS[mini(i, 7)]
 		var travel := clampf(progress * 8 - i, 0, 1) if i < 8 else 0.0
 		var drop := clampf(arena.part_drop_ages[i] / DROP_DURATION, 0, 1)
-		if travel == 0 and drop < 1:
+		var reserved: bool = arena.bridge_parts_reserved and i < arena.BRIDGE_COST
+		if reserved:
+			start = STAGING_POINT + Vector2((i % 4) * 9, (i / 4) * 9)
+		if not reserved and travel == 0 and drop < 1:
 			piece.position = arena.part_drop_sources[i].lerp(start, drop) + Vector2(0, -sin(drop * PI) * 20)
 			piece.rotation = (i % 3 - 1) * (1.0 - drop) * 0.9
 		else:
@@ -99,7 +103,7 @@ func sample(progress: float) -> void:
 		piece.z_as_relative = false
 		piece.z_index = 6 if travel > 0 and travel < 1 else (-3 if travel >= 1 else 0)
 	$Count.visible = arena.tutorial.step >= 4 and not arena.built
-	$Count.text = "%d/8" % mini(8, arena.pieces)
+	$Count.text = "%d/8" % (arena.BRIDGE_COST if arena.bridge_parts_reserved else mini(arena.BRIDGE_COST, arena.pieces))
 	effects.queue_redraw()
 
 func _draw_effects() -> void:

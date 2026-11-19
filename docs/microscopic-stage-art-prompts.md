@@ -1,6 +1,6 @@
 # Arte da fase microscópica
 
-Assets criados com a ferramenta imagegen integrada. Referência visual fornecida pelo usuário: codex-clipboard-8cc826a7-489f-4ef2-9c05-3c9fcccda977.png. As imagens são usadas por AtlasTexture do Godot, sem alterar os originais gerados.
+Assets criados com a ferramenta imagegen integrada. Referência visual fornecida pelo usuário: imagem anexada. As imagens são usadas por AtlasTexture do Godot, sem alterar os originais gerados.
 
 ## background
 

@@ -1,0 +1,247 @@
+[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/shaft_descent.tscn" id="base"]
+[ext_resource type="Script" path="res://scripts/hive_stage.gd" id="script"]
+[ext_resource type="PackedScene" path="res://scenes/environment/hive_scenery.tscn" id="scenery"]
+[ext_resource type="PackedScene" path="res://scenes/environment/hive_bubble_puzzle.tscn" id="puzzle"]
+[ext_resource type="PackedScene" path="res://scenes/actors/hive_king.tscn" id="king"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_075.png" id="terminal"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_100.png" id="jar"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_112.png" id="capture_arrow"]
+[ext_resource type="Texture2D" path="res://assets/animations/toothbrush_pixel.tres" id="brush"]
+[ext_resource type="Texture2D" path="res://assets/animations/bubble_blaster_mechanical.tres" id="blaster"]
+[ext_resource type="Texture2D" path="res://assets/enemies/bacteria_king.png" id="king_sprite"]
+[ext_resource type="Texture2D" path="res://assets/avatars/Dude_Monster/Dude_Monster_Idle_4.png" id="tiburcio"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="font"]
+
+[ext_resource type="PackedScene" path="res://scenes/environment/arrival_elevator.tscn" id="original_lift"]
+[ext_resource type="Script" path="res://scripts/hive_geyser.gd" id="vent"]
+
+[sub_resource type="AtlasTexture" id="Jar"]
+atlas = ExtResource("jar")
+region = Rect2(10, 0, 50, 70)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Tiburcio"]
+atlas = ExtResource("tiburcio")
+region = Rect2(0, 0, 32, 32)
+filter_clip = true
+
+[node name="HiveStage" instance=ExtResource("base")]
+script = ExtResource("script")
+
+[node name="Environment" parent="." index="1"]
+visible = false
+script = null
+
+[node name="King" parent="Actors" instance=ExtResource("king")]
+position = Vector2(3861, 276)
+
+[node name="Tiburcio" type="Sprite2D" parent="Actors"]
+visible = false
+offset = Vector2(0, -15)
+scale = Vector2(2, 2)
+texture = SubResource("Tiburcio")
+
+[node name="BossHealthTrail" type="ProgressBar" parent="HUD" index="4"]
+visible = false
+offset_left = 258.0
+offset_top = 29.0
+offset_right = 615.0
+offset_bottom = 46.0
+mouse_filter = 2
+show_percentage = false
+
+[node name="TravelProgress" parent="HUD" index="5"]
+offset_left = 258.0
+offset_top = 29.0
+offset_right = 615.0
+offset_bottom = 46.0
+
+[node name="BossTitle" type="Label" parent="HUD"]
+visible = false
+offset_left = 258.0
+offset_top = 12.0
+offset_right = 615.0
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_outline_color = Color(0.10, 0.05, 0.14, 1)
+theme_override_constants/outline_size = 5
+
+[node name="Finale" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="HUD/Finale"]
+layout_mode = 0
+offset_left = 207.0
+offset_top = 52.0
+offset_right = 585.0
+offset_bottom = 190.0
+
+[node name="Content" type="VBoxContainer" parent="HUD/Finale/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 9
+
+[node name="Title" type="Label" parent="HUD/Finale/Panel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.87, 0.55, 1)
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 20
+text = "FIM"
+horizontal_alignment = 1
+
+[node name="Rescue" type="Label" parent="HUD/Finale/Panel/Content"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 9
+text = "Tibúrcio resgatado!"
+horizontal_alignment = 1
+
+[node name="Credits" type="Label" parent="HUD/Finale/Panel/Content"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 6
+theme_override_constants/line_spacing = 5
+text = "Arte do esgoto • Ansimuz
+Música • Juhani Junkala"
+horizontal_alignment = 1
+
+[node name="Menu" type="Button" parent="HUD/Finale/Panel/Content"]
+custom_minimum_size = Vector2(162, 24)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "VOLTAR AO MENU"
+
+[node name="Scenery" parent="." instance=ExtResource("scenery")]
+
+[node name="BubblePuzzle" parent="." instance=ExtResource("puzzle")]
+position = Vector2(575, 280)
+
+[node name="Arsenal" type="Node2D" parent="."]
+position = Vector2(720, 268)
+
+[node name="Terminal" type="Sprite2D" parent="Arsenal"]
+position = Vector2(0, -32)
+scale = Vector2(0.83, 1.04)
+modulate = Color(0.73, 1.02, 1.22, 1)
+texture = ExtResource("terminal")
+
+[node name="Brush" type="Sprite2D" parent="Arsenal"]
+visible = false
+z_index = 14
+modulate = Color(1, 0.76, 0.46, 1)
+position = Vector2(-18, -61)
+rotation = -0.45
+scale = Vector2(0.036, 0.053)
+texture = ExtResource("brush")
+
+[node name="Blaster" type="Sprite2D" parent="Arsenal"]
+visible = false
+z_index = 14
+modulate = Color(0.95, 0.67, 1, 1)
+position = Vector2(18, -58)
+rotation = 0.24
+scale = Vector2(0.043, 0.043)
+texture = ExtResource("blaster")
+
+[node name="CaptureJar" type="Node2D" parent="."]
+visible = false
+z_index = 11
+
+[node name="Bottle" type="Sprite2D" parent="CaptureJar"]
+position = Vector2(0, -36)
+scale = Vector2(0.62, 0.62)
+modulate = Color(1.02, 1.24, 1.42, 1)
+texture = SubResource("Jar")
+
+[node name="Captured" type="Sprite2D" parent="CaptureJar"]
+visible = false
+position = Vector2(0, -33)
+texture = ExtResource("king_sprite")
+scale = Vector2(0.24, 0.24)
+
+[node name="Indicator" type="Sprite2D" parent="CaptureJar"]
+position = Vector2(0, -82)
+texture = ExtResource("capture_arrow")
+scale = Vector2(0.42, 0.42)
+
+[node name="Hint" type="Label" parent="CaptureJar"]
+visible = false
+offset_left = -6.0
+offset_top = -109.0
+theme_override_colors/font_outline_color = Color(0.04, 0.1, 0.13, 1)
+theme_override_constants/outline_size = 5
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 11
+
+[node name="ArrivalElevator" parent="." instance=ExtResource("original_lift")]
+position = Vector2(170, 316)
+show_shaft = true
+
+[node name="Drains" type="Node2D" parent="."]
+z_index = -1
+
+[node name="Overflow" type="Node2D" parent="Drains"]
+position = Vector2(900, 251)
+script = ExtResource("vent")
+rest_time = 2.9
+
+[node name="Return" type="Node2D" parent="Drains"]
+position = Vector2(1060, 306)
+script = ExtResource("vent")
+rest_time = 4.65
+
+[node name="Intake" type="Node2D" parent="Drains"]
+position = Vector2(1430, 251)
+script = ExtResource("vent")
+rest_time = 2.9
+
+[node name="OverflowEast" type="Node2D" parent="Drains"]
+position = Vector2(1566, 306)
+script = ExtResource("vent")
+rest_time = 4.1
+
+[node name="PressureWest" type="Node2D" parent="Drains"]
+position = Vector2(1805, 306)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="PressureOutlet" type="Node2D" parent="Drains"]
+position = Vector2(1932, 245)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="ReturnEast" type="Node2D" parent="Drains"]
+position = Vector2(2055, 306)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="RoyalWest" type="Node2D" parent="Drains"]
+position = Vector2(3632, 248)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="RoyalEast" type="Node2D" parent="Drains"]
+position = Vector2(3923, 251)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="RoyalValve" type="Node2D" parent="Drains"]
+position = Vector2(3800, 304)
+script = ExtResource("vent")
+rest_time = 200.0
+
+[node name="ExhaustDrain" type="Node2D" parent="Drains"]
+position = Vector2(2549, 306)
+script = ExtResource("vent")
+rest_time = 3.8
+
+[node name="DikeDrain" type="Node2D" parent="Drains"]
+position = Vector2(3152, 248)
+script = ExtResource("vent")
+rest_time = 4.4

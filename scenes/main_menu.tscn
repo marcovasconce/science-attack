@@ -1,0 +1,147 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="menu"]
+[ext_resource type="Texture2D" path="res://assets/menu/laboratory_stage.png" id="background"]
+[ext_resource type="Texture2D" path="res://assets/menu/title_mark.png" id="title"]
+[ext_resource type="Script" path="res://scripts/menu_orbit.gd" id="orbits"]
+[ext_resource type="Script" path="res://scripts/menu_laboratory.gd" id="laboratory"]
+[ext_resource type="SpriteFrames" path="res://assets/avatars/Owlet_Monster.tres" id="first"]
+[ext_resource type="SpriteFrames" path="res://assets/avatars/Pink_Monster.tres" id="second"]
+[ext_resource type="SpriteFrames" path="res://assets/avatars/Dude_Monster.tres" id="tiburcio"]
+[ext_resource type="Texture2D" path="res://assets/third_party/ansimuz/Top Down Lab files/tileset.png" id="rack"]
+
+[sub_resource type="AtlasTexture" id="Logo"]
+atlas = ExtResource("title")
+region = Rect2(96, 94, 1337, 854)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="RackRail"]
+atlas = ExtResource("rack")
+region = Rect2(128, 17, 96, 8)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="RackFoot"]
+atlas = ExtResource("rack")
+region = Rect2(137, 16, 21, 8)
+filter_clip = true
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("menu")
+
+[node name="Background" type="TextureRect" parent="."]
+texture_filter = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+texture = ExtResource("background")
+expand_mode = 1
+stretch_mode = 6
+modulate = Color(0.83, 0.87, 0.96, 1)
+
+[node name="Laboratory" type="Node2D" parent="."]
+script = ExtResource("laboratory")
+
+[node name="FirstAvatar" type="AnimatedSprite2D" parent="Laboratory"]
+position = Vector2(397, 299)
+scale = Vector2(3, 3)
+sprite_frames = ExtResource("first")
+animation = &"idle"
+offset = Vector2(0, -16)
+
+[node name="Tiburcio" type="AnimatedSprite2D" parent="Laboratory"]
+position = Vector2(464, 299)
+scale = Vector2(3, 3)
+sprite_frames = ExtResource("tiburcio")
+animation = &"idle"
+offset = Vector2(0, -16)
+
+[node name="SecondAvatar" type="AnimatedSprite2D" parent="Laboratory"]
+position = Vector2(531, 299)
+scale = Vector2(3, 3)
+sprite_frames = ExtResource("second")
+animation = &"idle"
+offset = Vector2(0, -16)
+flip_h = true
+
+[node name="TubeRack" type="Node2D" parent="Laboratory"]
+position = Vector2(443, 126)
+
+[node name="LeftFoot" type="Sprite2D" parent="Laboratory/TubeRack"]
+position = Vector2(-49, -9)
+rotation = 1.5707963
+scale = Vector2(0.9, 0.82)
+texture = SubResource("RackFoot")
+
+[node name="RightFoot" type="Sprite2D" parent="Laboratory/TubeRack"]
+position = Vector2(49, -9)
+rotation = 1.5707963
+scale = Vector2(0.9, 0.82)
+texture = SubResource("RackFoot")
+
+[node name="FrontRail" type="Sprite2D" parent="Laboratory/TubeRack"]
+position = Vector2(0, -13)
+scale = Vector2(1.08, 0.85)
+texture = SubResource("RackRail")
+
+[node name="BottomRail" type="Sprite2D" parent="Laboratory/TubeRack"]
+position = Vector2(0, -2)
+scale = Vector2(1.08, 0.55)
+texture = SubResource("RackRail")
+
+[node name="Orbit" type="Node2D" parent="."]
+position = Vector2(159, 85)
+script = ExtResource("orbits")
+
+[node name="Title" type="TextureRect" parent="."]
+texture_filter = 2
+offset_left = 43.0
+offset_top = 13.0
+offset_right = 275.0
+offset_bottom = 153.0
+mouse_filter = 2
+texture = SubResource("Logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Buttons" type="VBoxContainer" parent="."]
+offset_left = 47.0
+offset_top = 161.0
+offset_right = 271.0
+offset_bottom = 342.0
+mouse_filter = 2
+theme_override_constants/separation = 5
+
+[node name="Play" type="Button" parent="Buttons"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+text = "Jogar"
+
+[node name="Coop" type="CheckButton" parent="Buttons"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+text = "Jogar em dupla"
+
+[node name="Chapters" type="Button" parent="Buttons"]
+custom_minimum_size = Vector2(0, 31)
+layout_mode = 2
+text = "Capítulos"
+
+[node name="Options" type="Button" parent="Buttons"]
+custom_minimum_size = Vector2(0, 31)
+layout_mode = 2
+text = "Opções"
+
+[node name="Exit" type="Button" parent="Buttons"]
+custom_minimum_size = Vector2(0, 31)
+layout_mode = 2
+text = "Sair"

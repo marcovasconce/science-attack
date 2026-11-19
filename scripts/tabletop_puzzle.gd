@@ -27,7 +27,6 @@ var parts: Array[Node2D] = []
 var destinations: Array[Vector2] = []
 var snap_ages: Array[float] = []
 var loose_textures: Array[Texture2D] = []
-var sources: Array[Vector2] = []
 @onready var arena = get_parent()
 @onready var machine: Node2D = $Machine
 @onready var hint: Label = $Hint
@@ -85,28 +84,29 @@ func restore_running() -> void:
 	snapped_parts = PART_COUNT
 	startup_age = STARTUP_DURATION
 	light_levels = [1.0,1.0,1.0]
-	sources.clear()
-	for destination in destinations: sources.append(machine.to_global(destination))
 	marker.hide()
 	_sync_machine()
 
 func needs_salvage() -> bool:
-	return used_parts == 0 and arena.pieces < PART_COUNT
+	return used_parts == 0 and mini(arena.pieces, arena.part_origins.size()) < PART_COUNT
 
 func is_building(player) -> bool:
-	if grace <= 0 or constructed: return false
-	return player == builder or (player.ai_controlled and player.position.distance_to(BUILD_POINT) < 90)
+	if arena.controls_locked or grace <= 0 or constructed or not is_instance_valid(builder): return false
+	if not builder.can_assemble() or builder.position.distance_to(BUILD_POINT) > REACH: return false
+	return player.can_assemble() and (player == builder or (player.ai_controlled and player.position.distance_to(BUILD_POINT) < 90))
+
+func stop_building(player) -> void:
+	if player == builder: grace = 0
 
 func interact(player, dt: float) -> void:
 	if not started or constructed or arena.controls_locked or player.ai_controlled or player.down: return
-	if player.jump_height > 0 or player.specials.active or player.stun > 0 or player.dash > 0: return
+	if not player.can_assemble(): return
 	if player.position.distance_to(BUILD_POINT) > REACH: return
-	if grace > 0 and is_instance_valid(builder) and builder != player: return
+	if is_instance_valid(builder) and builder != player and is_building(builder): return
 	if used_parts == 0:
 		if needs_salvage(): return
 		arena.pieces -= PART_COUNT
 		used_parts = PART_COUNT
-		for i in PART_COUNT: sources.append(arena.part_origins[i])
 	builder = player
 	grace = 0.18
 	build_progress = minf(1.0,build_progress+dt/BUILD_DURATION)
@@ -124,7 +124,7 @@ func interact(player, dt: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo() or not constructed or activating or finished or arena.controls_locked: return
 	for player in arena.players:
-		if event.is_action_pressed("p%d_interact" % player.player_id) and pull_lever(player):
+		if GameInput.event_for(event, player.player_id, "interact") and pull_lever(player):
 			get_viewport().set_input_as_handled()
 			return
 
@@ -164,6 +164,9 @@ func _update_hint() -> void:
 	marker.visible = started and not finished and not activating
 	marker.modulate.a = 0.65
 
+func staging_position(index: int) -> Vector2:
+	return BUILD_POINT + Vector2((index % 3 - 1) * 11, 13 + (index / 3) * 8)
+
 func _sync_machine() -> void:
 	for i in PART_COUNT:
 		var part := parts[i]
@@ -171,7 +174,7 @@ func _sync_machine() -> void:
 		part.visible = travel > 0
 		if not part.visible: continue
 		var flight := smoothstep(0,0.88,travel)
-		var origin := machine.to_local(sources[i])
+		var origin := machine.to_local(staging_position(i))
 		part.position = origin.lerp(destinations[i]+Vector2(0,-7),flight)
 		part.position.y += -sin(flight*PI)*35 + smoothstep(0.88,1,travel)*7
 		part.scale = Vector2.ONE*lerpf(0.28,1,smoothstep(0,0.85,travel))
@@ -189,21 +192,22 @@ func _sync_machine() -> void:
 
 func update_camera(dt: float) -> void:
 	if arena.controls_locked: return
-	var target := 1.0 if grace > 0 or activating else 0.0
+	var target := 1.0 if activating or (is_instance_valid(builder) and is_building(builder)) else 0.0
 	camera_blend = move_toward(camera_blend,target,dt*1.8)
 	var weight := smoothstep(0,1,camera_blend)
 	var camera: Camera2D = arena.get_node("Camera2D")
 	camera.position.y = lerpf(180,194,weight)
-	camera.position.x = lerpf(camera.position.x,2080,weight*0.8)
+	camera.position.x = lerpf(camera.position.x,BUILD_POINT.x,weight*0.8)
 	camera.zoom = Vector2.ONE*lerpf(1,1.06,weight)
 
 func _draw() -> void:
 	# Salvage is visible even if a crate was broken before combat ended.
 	for i in arena.part_origins.size():
-		if used_parts > 0 and build_progress*PART_COUNT > i: continue
+		if i < used_parts and build_progress * PART_COUNT > i: continue
+		var source: Vector2 = staging_position(i) if i < used_parts else arena.part_origins[i]
 		var texture := loose_textures[i%PART_COUNT]
 		var size := texture.get_size()*(18.0/maxf(texture.get_width(),texture.get_height()))
-		draw_texture_rect(texture,Rect2(arena.part_origins[i]-size*0.5,size),false)
+		draw_texture_rect(texture,Rect2(source-size*0.5,size),false)
 	for i in PART_COUNT:
 		var age := snap_ages[i]
 		if age >= 0.45: continue

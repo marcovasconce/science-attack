@@ -2,9 +2,11 @@
 extends Control
 ## Same font, colors, hard pixel frame and portrait inset as the opening dialogue.
 const PIXEL_FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
-const FILL := Color("102346")
 const EDGE := Color("5489d6")
 const ACCENT := Color("b2d9ff")
+const MenuSkin = preload("res://scripts/menu_button.gd")
+var frame := MenuSkin.panel(Color(0.25, 0.35, 0.52))
+var name_plate := MenuSkin.dialogue_name()
 var previous_text := ""
 var reveal := 0.0
 
@@ -53,10 +55,8 @@ func _process(dt: float) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2(3, 4), size), Color(0.005, 0.01, 0.025, 0.65))
-	draw_rect(Rect2(Vector2.ZERO, size), Color("080e21"))
-	draw_rect(Rect2(Vector2.ONE, size - Vector2(2, 2)), EDGE)
-	draw_rect(Rect2(Vector2(3, 3), size - Vector2(6, 6)), FILL)
-	draw_rect(Rect2(5, 4, size.x - 10, 1), Color(EDGE, 0.5))
+	draw_style_box(frame, Rect2(Vector2.ZERO, size))
+	draw_style_box(name_plate, Rect2(64, 4, 150, 17))
 	draw_rect(Rect2(10, 7, 46, size.y - 14), Color("080e21"))
 	draw_rect(Rect2(11, 8, 44, size.y - 16), Color(EDGE, 0.12))
 	draw_line(Vector2(70, size.y - 22), Vector2(size.x - 12, size.y - 22), Color(EDGE, 0.55), 1.0)

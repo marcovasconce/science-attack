@@ -2,27 +2,24 @@ extends Control
 ## A short radio message that never captures gameplay input.
 signal closed
 const FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
+const MenuSkin = preload("res://scripts/menu_button.gd")
 var active := false
 var remaining := 0.0
 var age := 0.0
-var frame: StyleBoxFlat
+var frame: StyleBoxTexture
 
 func _ready() -> void:
 	position = Vector2(320,10)
 	size = Vector2(308,78)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame = StyleBoxFlat.new()
-	frame.bg_color = Color("102346")
-	frame.border_color = Color("76cbd3")
-	frame.set_border_width_all(2)
-	frame.set_corner_radius_all(5)
+	frame = MenuSkin.panel(Color(0.23, 0.36, 0.53))
 	$Speaker.position = Vector2(43,9)
 	$Speaker.add_theme_font_override("font",FONT)
 	$Speaker.add_theme_font_size_override("font_size",8)
 	$Speaker.modulate = Color("b2eaff")
 	$Message.position = Vector2(43,25)
 	$Message.size = Vector2(255,46)
-	$Message.add_theme_font_size_override("font_size",15)
+	$Message.add_theme_font_size_override("font_size",8)
 	$Message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	$Message.add_theme_constant_override("line_spacing",2)
 	$RadioPortrait.position = Vector2(22,43)

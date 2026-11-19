@@ -1,0 +1,61 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/hive_king.gd" id="king"]
+[ext_resource type="Texture2D" path="res://assets/enemies/bacteria_king.png" id="sprite"]
+[ext_resource type="Texture2D" path="res://assets/third_party/alejandrohaibi/bubble.png" id="bubble"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_065.png" id="stripe"]
+
+[sub_resource type="AtlasTexture" id="Ring"]
+atlas = ExtResource("bubble")
+region = Rect2(14, 14, 38, 38)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Stripe"]
+atlas = ExtResource("stripe")
+region = Rect2(0, 0, 70, 18)
+filter_clip = true
+
+[node name="King" type="Node2D"]
+visible = false
+script = ExtResource("king")
+
+[node name="Warning" type="Node2D" parent="."]
+z_index = -1
+top_level = true
+
+[node name="Lane" type="TextureRect" parent="Warning"]
+visible = false
+modulate = Color(1, 0.64, 0.34, 0.64)
+texture = SubResource("Stripe")
+expand_mode = 1
+mouse_filter = 2
+
+[node name="First" type="Sprite2D" parent="Warning"]
+visible = false
+modulate = Color(1.3, 0.75, 0.38, 0.93)
+texture = SubResource("Ring")
+
+[node name="Second" type="Sprite2D" parent="Warning"]
+visible = false
+modulate = Color(1.3, 0.75, 0.38, 0.93)
+texture = SubResource("Ring")
+
+[node name="Third" type="Sprite2D" parent="Warning"]
+visible = false
+modulate = Color(1.3, 0.75, 0.38, 0.93)
+texture = SubResource("Ring")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+modulate = Color(0.17, 0.17, 0.29, 0.39)
+texture = SubResource("Ring")
+scale = Vector2(2.92, 0.49)
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(0, -69)
+scale = Vector2(1.73, 1.73)
+texture = ExtResource("sprite")
+
+[node name="Charge" type="Sprite2D" parent="."]
+visible = false
+z_index = 1
+position = Vector2(-52, -48)
+texture = SubResource("Ring")

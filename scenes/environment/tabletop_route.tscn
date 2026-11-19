@@ -470,14 +470,8 @@ modulate = Color(0.6,0.75,2.5,1)
 [node name="ExitElevator" parent="." instance=ExtResource("exit_cabin")]
 position = Vector2(6900,316)
 script = ExtResource("exit_lift")
-
-[node name="Destination" type="Label" parent="ExitElevator"]
-offset_left = -24
-offset_top = -226
-theme_override_fonts/font = ExtResource("font")
-theme_override_font_sizes/font_size = 8
-text = "ESTUFA"
-mouse_filter = 2
+next_scene_path = "res://scenes/gameplay/lower_lab_stage.tscn"
+travels_down = true
 
 [node name="Inventory" type="CanvasLayer" parent="."]
 layer = 9

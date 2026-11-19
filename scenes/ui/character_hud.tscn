@@ -117,7 +117,7 @@ offset_top = 52.0
 offset_right = 110.0
 offset_bottom = 61.0
 mouse_filter = 2
-theme_override_font_sizes/font_size = 6
+theme_override_font_sizes/font_size = 8
 text = "100/100"
 
 [node name="SpecialLabel" type="Label" parent="."]
@@ -128,7 +128,7 @@ offset_right = 190.0
 offset_bottom = 61.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.29, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 6
+theme_override_font_sizes/font_size = 8
 text = "ESPECIAL"
 
 [node name="Flask" type="TextureRect" parent="."]
@@ -161,7 +161,7 @@ offset_right = 244.0
 offset_bottom = 63.0
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
-theme_override_font_sizes/font_size = 6
+theme_override_font_sizes/font_size = 8
 text = "[R]"
 
 [node name="HitCombo" type="Label" parent="."]

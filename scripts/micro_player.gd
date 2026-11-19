@@ -7,6 +7,9 @@ extends CharacterBody2D
 @export_range(0, 99) var healing_flasks := 5
 @export_range(1, 1000) var flask_heal_amount := 25
 var equipped_weapon := "none"
+var weapon_upgraded := false
+var burst_round := 0
+var finisher_pending := false
 const PixelVisual = preload("res://scripts/pixel_avatar_visual.gd")
 const BrushMotion = preload("res://scripts/brush_motion.gd")
 const SpecialAbility = preload("res://scripts/special_ability.gd")
@@ -18,6 +21,9 @@ var dash_visual: Node2D
 var airborne_attack := false
 var chain_grace := 0.0
 const BUBBLE_INTERVAL := 0.28
+const OVERCHARGE_INTERVAL := 0.17
+const BRUSH_UPGRADE_COLOR := Color("ffb450")
+const BUBBLE_UPGRADE_COLOR := Color("e7a2ff")
 var bubble_cooldown := 0.0
 var hp := 100
 var facing := 1.0
@@ -31,6 +37,7 @@ var buffered := false
 var hit_targets: Array = []
 var invulnerable := 0.0
 var stun := 0.0
+var push_velocity := Vector2.ZERO
 var jump_height := 0.0
 var jump_speed := 0.0
 var dash := 0.0
@@ -58,12 +65,15 @@ func _ready() -> void:
 	pixel_visual.name = "PixelEquipment"
 	$Visual.add_child(pixel_visual)
 	pixel_visual.setup(self,sprite)
-	$PlayerMarker.text="P%d" % (player_id+1) if not ai_controlled else "IA"
+	refresh_player_marker()
 
 func _physics_process(dt: float) -> void:
 	invulnerable = maxf(0, invulnerable-dt)
 	stun = maxf(0, stun-dt)
 	ai_clock += dt
+	if down:
+		if sprite.animation != &"death": _play_death()
+		return
 	if arena.controls_locked:
 		velocity=Vector2.ZERO
 		return
@@ -90,11 +100,16 @@ func _physics_process(dt: float) -> void:
 		if arena.tutorial.step<7: target=null
 		var destination: Vector2 = arena.players[0].position + Vector2(-30,20)
 		if target != null:
-			var distance := 210.0 if equipped_weapon == "bubbles" else (72.0 if equipped_weapon == "brush" else 28.0)
+			var distance := 210.0 if equipped_weapon == "bubbles" else (melee_reach() * 0.64 if equipped_weapon == "brush" else 28.0)
 			destination = target.position - Vector2(distance * signf(target.position.x-position.x),0)
 			if attack_time <= 0: facing = 1.0 if target.position.x >= position.x else -1.0
 			var reach := 520.0 if equipped_weapon == "bubbles" else melee_reach() - 5.0
 			attack = absf(target.position.x-position.x)<reach and absf(target.position.y-position.y)<18 and arena.tutorial.step>=7
+			if target.has_method("requires_air_attack") and target.requires_air_attack():
+				jump = attack and jump_height <= 0 and stun <= 0
+				attack = attack and jump_height >= 18
+			if arena.has_method("ai_combat_destination"):
+				destination = arena.ai_combat_destination(self, target, destination)
 		var offset := destination-position
 		direction = offset.normalized() if offset.length()>12 else Vector2.ZERO
 		var boarding = arena.elevator.ai_boarding_destination(self)
@@ -106,20 +121,12 @@ func _physics_process(dt: float) -> void:
 			direction = to_plate.normalized() if to_plate.length()>3 else Vector2.ZERO
 			attack = false
 		interact = true
-		if arena.has_method("obstacle_ahead") and jump_height <= 0 and arena.obstacle_ahead(self, direction):
-			jump = true
 		if arena.players[0].down:
 			direction = (arena.players[0].position-position).normalized() if position.distance_to(arena.players[0].position)>26 else Vector2.ZERO
+			attack = false
+		if arena.has_method("obstacle_ahead") and jump_height <= 0 and arena.obstacle_ahead(self, direction):
+			jump = true
 		attack_held = attack
-	if down:
-		specials.cancel()
-		dash = 0
-		dash_visual.clear()
-		$Visual.rotation = 0
-		$Visual.position = Vector2(0,-jump_height)
-		sprite.speed_scale = 1.0
-		sprite.play("death")
-		return
 	if heal: use_healing_flask()
 	if special: specials.try_activate()
 	if specials.active:
@@ -129,6 +136,11 @@ func _physics_process(dt: float) -> void:
 		dodge = false
 	if interact:
 		arena.interact(self,dt)
+	else:
+		arena.stop_assembling(self)
+	if arena.is_assembling(self):
+		jump = false
+		dodge = false
 	if equipped_weapon == "brush" and attack_time <= 0 and attack_held: attack = true
 	if attack and stun<=0 and not arena.is_assembling(self):
 		if equipped_weapon == "bubbles":
@@ -139,9 +151,11 @@ func _physics_process(dt: float) -> void:
 			start_attack()
 	if jump and jump_height<=0 and stun<=0:
 		arena.tutorial.record_action("jump", self)
+		GameAudio.effect("jump", global_position)
 		jump_speed = 235
 	if dodge and dash<=0:
 		arena.tutorial.record_action("dodge", self)
+		GameAudio.effect("dodge", global_position)
 		dash = 0.24
 
 		invulnerable = 0.3
@@ -167,6 +181,9 @@ func _physics_process(dt: float) -> void:
 	if stun>0: speed=0
 	if arena.is_assembling(self): speed=0
 	velocity = direction * Vector2(speed,speed*0.66)
+	var remaining_push := push_velocity.move_toward(Vector2.ZERO,1100*dt)
+	velocity += (push_velocity+remaining_push)*0.5
+	push_velocity = remaining_push
 	if equipped_weapon == "brush" and attack_time > 0 and stun <= 0 and dash <= 0 and not arena.is_assembling(self):
 		velocity.x += brush_step_velocity(dt)*facing
 	set_collision_mask_value(4,jump_height<20)
@@ -185,6 +202,12 @@ func _physics_process(dt: float) -> void:
 	if attack_time>0:
 		attack_time-=dt
 		if equipped_weapon != "bubbles" and attack_contact_active():
+			if finisher_pending:
+				finisher_pending = false
+				var flash: Node2D = arena.spawn_impact(1, global_position + Vector2(facing * 42, -26), facing)
+				flash.scale = Vector2(3.2, 1.45)
+				flash.modulate = BRUSH_UPGRADE_COLOR
+				arena.start_camera_shake(4, 0.22)
 			arena.strike(self,combo,hit_targets)
 		var continue_brush := equipped_weapon == "brush" and attack_held
 		if attack_time<=0 and (buffered or continue_brush) and stun <= 0 and not arena.controls_locked and not arena.is_assembling(self):
@@ -198,7 +221,8 @@ func _physics_process(dt: float) -> void:
 	if stun>0: animation="hurt"
 	if arena.is_assembling(self):
 		animation="build"
-		facing=signf(605-position.x)
+		var build_direction: float = arena.assembly_facing(self)
+		if build_direction != 0: facing = build_direction
 	if equipped_weapon != "none" and animation not in ["build","hurt","death"]:
 		if specials.active:
 			animation = specials.animation_name()
@@ -227,9 +251,10 @@ func _physics_process(dt: float) -> void:
 	$Visual.position = Vector2(roundf(facing*lean*2),-jump_height+roundf(lean*2))
 	dash_visual.tick(dt,self,dashing)
 	modulate.a=0.5 if invulnerable>0 and int(ai_clock*20)%2==0 else 1.0
-	$PlayerMarker.text="P%d" % (player_id+1) if not ai_controlled else "IA"
+
 
 func start_attack() -> void:
+	GameAudio.effect("bubble" if equipped_weapon == "bubbles" else "brush", global_position)
 	combo_idle_time = 0.0
 	arena.tutorial.record_action("attack", self)
 	if equipped_weapon == "brush" and chain_grace <= 0: combo = 0
@@ -238,16 +263,21 @@ func start_attack() -> void:
 	airborne_attack = equipped_weapon == "brush" and jump_height > 0
 	if equipped_weapon == "brush":
 		attack_duration = float(BrushMotion.DURATION[brush_animation()])
+	if weapon_upgraded and equipped_weapon == "brush":
+		attack_duration *= 0.82
+	finisher_pending = weapon_upgraded and equipped_weapon == "brush" and combo == 3
 	chain_grace = 0.42
 	attack_time=attack_duration
 	hit_targets.clear()
 	sprite.stop()
 	if equipped_weapon == "bubbles":
-		attack_duration = BUBBLE_INTERVAL
-		attack_time = BUBBLE_INTERVAL
-		bubble_cooldown = BUBBLE_INTERVAL
+		attack_duration = OVERCHARGE_INTERVAL if weapon_upgraded else BUBBLE_INTERVAL
+		attack_time = attack_duration
+		bubble_cooldown = attack_duration
 		buffered = false
-		arena.spawn_bubble(self)
+		if weapon_upgraded:
+			burst_round = (burst_round + 1) % 3
+		arena.spawn_bubble(self, weapon_upgraded, weapon_upgraded and burst_round == 0)
 
 func attack_contact_active() -> bool:
 	var progress := 1.0-attack_time/maxf(attack_duration,0.01)
@@ -266,9 +296,10 @@ func brush_step_velocity(dt: float) -> float:
 	# Integrate the step through CharacterBody2D so walls, crates and the gap block it.
 	return (BrushMotion.displacement(animation,after)-BrushMotion.displacement(animation,before))/dt
 
-func take_hit(amount: int, source: Vector2) -> void:
-	if amount <= 0 or invulnerable>0 or down or jump_height>30: return
+func take_hit(amount: int, source: Vector2, hits_airborne := false) -> void:
+	if amount <= 0 or invulnerable>0 or down or (jump_height>30 and not hits_airborne): return
 	reset_hit_combo()
+	GameAudio.effect("hurt", global_position)
 	hp=maxi(0,hp-amount)
 	invulnerable=0.8
 	stun=0.25
@@ -277,15 +308,48 @@ func take_hit(amount: int, source: Vector2) -> void:
 		attack_time = 0
 		buffered = false
 		chain_grace = 0
-	position.x+=signf(position.x-source.x)*12
+	move_and_collide(Vector2(signf(position.x-source.x)*12,0))
 	if hp==0:
-		specials.cancel()
-		down=true
-		sprite.stop()
+		down = true
+		_play_death()
+
+func _play_death() -> void:
+	arena.stop_assembling(self)
+	specials.cancel()
+	dash = 0
+	attack_time = 0
+	chain_grace = 0
+	buffered = false
+	jump_height = 0
+	jump_speed = 0
+	velocity = Vector2.ZERO
+	push_velocity = Vector2.ZERO
+	dash_visual.clear()
+	$Visual.rotation = 0
+	$Visual.position = Vector2.ZERO
+	modulate.a = 1.0
+	sprite.speed_scale = 1.0
+	sprite.play("death")
+
+func can_assemble() -> bool:
+	return not down and jump_height <= 0 and dash <= 0 and stun <= 0 and attack_time <= 0 and not specials.active
+
+func refresh_player_marker() -> void:
+	$PlayerMarker.visible = arena.show_player_ids()
+	$PlayerMarker.text = "IA" if ai_controlled else "P%d" % (player_id + 1)
+
+func receive_shield_push(amount: int, source: Vector2, push_direction: float) -> void:
+	if invulnerable > 0 or down or jump_height > 30: return
+	take_hit(amount,source)
+	if down: return
+	push_velocity = Vector2(push_direction*440,0)
+	stun = maxf(stun,0.4)
+	dash = 0
 
 func use_healing_flask() -> bool:
 	if arena.controls_locked or down or hp <= 0 or hp >= max_hp or healing_flasks <= 0:
 		return false
+	GameAudio.effect("jar", global_position)
 	healing_flasks -= 1
 	hp = mini(max_hp, hp + flask_heal_amount)
 	return true
@@ -307,6 +371,8 @@ func equip_weapon(choice: String) -> bool:
 	if choice not in ["brush","bubbles"]: return false
 	if is_instance_valid(specials): specials.cancel()
 	equipped_weapon = choice
+	burst_round = 0
+	finisher_pending = false
 	combo = 0
 	chain_grace = 0
 	airborne_attack = false
@@ -319,10 +385,14 @@ func equip_weapon(choice: String) -> bool:
 	return true
 
 func melee_reach() -> float:
-	return 112.0 if equipped_weapon == "brush" else 65.0
+	if equipped_weapon != "brush": return 65.0
+	if weapon_upgraded: return 188.0 if combo == 3 else 150.0
+	return 112.0
 
 func melee_damage(combo_index: int) -> int:
-	if equipped_weapon == "brush": return 40 if combo_index == 3 else 28
+	if equipped_weapon == "brush":
+		if weapon_upgraded: return 102 if combo_index == 3 else 62
+		return 40 if combo_index == 3 else 28
 	return 28 if combo_index == 3 else 18
 
 func update_sprite_alignment() -> void:

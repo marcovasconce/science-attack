@@ -135,6 +135,10 @@ func run() -> void:
 	p.position = puzzle.BUILD_POINT
 	stage.interact(p,0.5)
 	check(puzzle.build_progress == 0 and stage.pieces == 3,"Building waits for all nine parts without spending a partial supply")
+	stage.pieces += 9
+	stage.interact(p,0.5)
+	check(puzzle.build_progress == 0 and stage.pieces == 12,"Stock from the previous stage cannot substitute the generator's local salvage")
+	stage.pieces -= 9
 	for crate in stage.get_node("Breakables").get_children():
 		crate.freeze = true
 		p.position = crate.position-Vector2(50,0)
@@ -153,6 +157,11 @@ func run() -> void:
 	check(puzzle.build_progress > 0 and puzzle.snapped_parts == 1 and stage.is_assembling(p),"The marked spot starts sequential assembly and animates the builder")
 	check(stage.pieces == 0 and puzzle.used_parts == 9,"Building reserves the nine parts once")
 	var held_progress: float = puzzle.build_progress
+	Input.action_press("p0_interact")
+	p._physics_process(0)
+	check(p.sprite.animation == &"build" and p.facing > 0,"The generator uses the construction animation facing the machine")
+	Input.action_release("p0_interact")
+	p._physics_process(0)
 	puzzle._process(0.4)
 	check(puzzle.build_progress == held_progress and not stage.is_assembling(p),"Releasing interaction stops construction and preserves progress")
 	q.ai_controlled = false
@@ -161,6 +170,7 @@ func run() -> void:
 	stage.interact(q,0.6)
 	puzzle._process(0)
 	check(puzzle.build_progress > held_progress and stage.pieces == 0,"P2 can resume the same build without a second resource charge")
+	puzzle.stop_building(q)
 	stage.route._update_hint()
 	check("U" in stage.route.hint.text and "E / U" not in stage.route.hint.text,"Only the nearby human receives an interaction key")
 	puzzle._process(0.4)

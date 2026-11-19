@@ -1,0 +1,20 @@
+extends SceneTree
+## Technical cropping and nearest-neighbor sizing of generated environment art.
+func _initialize() -> void:
+	var source := Image.load_from_file("res://art/source/lower_lab/broken_exit_elevator.png")
+	var lift := source.get_region(source.get_used_rect())
+	lift.resize(280,230,Image.INTERPOLATE_NEAREST)
+	lift.save_png("res://assets/environment/lower_lab/broken_exit_elevator.png")
+	source = Image.load_from_file("res://art/source/lower_lab/shaft_environment.png")
+	var wall := source.get_region(Rect2i(0,0,source.get_width(),source.get_height()/2))
+	wall.resize(640,320,Image.INTERPOLATE_NEAREST)
+	wall.save_png("res://assets/environment/lower_lab/shaft_wall.png")
+	var top := int(source.get_height()*0.61)
+	var deck := source.get_region(Rect2i(0,top,source.get_width(),source.get_height()-top))
+	deck.resize(640,176,Image.INTERPOLATE_NEAREST)
+	deck.save_png("res://assets/environment/lower_lab/shaft_deck.png")
+	source = Image.load_from_file("res://art/source/lower_lab/hive_entrance.png")
+	source.resize(1280,360,Image.INTERPOLATE_NEAREST)
+	source.save_png("res://assets/environment/lower_lab/hive_entrance.png")
+	print("PASS: descent environment assets prepared")
+	quit()

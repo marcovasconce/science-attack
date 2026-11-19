@@ -2,6 +2,7 @@ extends "res://scripts/tutorial_box.gd"
 signal closed
 var active := false
 var interact_key := "E"
+var speaker_player := 0
 func _ready() -> void:
 	super._ready()
 	hide()
@@ -12,6 +13,7 @@ func _layout() -> void:
 	$RadioPortrait.position.y = size.y * 0.5
 func open_line(speaker: String, words: String, player_id: int) -> void:
 	active = true
+	speaker_player = player_id
 	interact_key = "E" if player_id == 0 else "U"
 	$Speaker.text = speaker
 	$Message.text = words
@@ -36,4 +38,5 @@ func advance() -> void:
 		hide()
 		closed.emit()
 func _update_hint() -> void:
-	$Key.text = interact_key + ("  CONTINUAR" if $Message.visible_characters >= previous_text.length() else "  MOSTRAR FALA")
+	var label := "CONTINUAR" if $Message.visible_characters >= previous_text.length() else "MOSTRAR FALA"
+	GameInput.label_hint($Key, speaker_player, "interact", interact_key + "  " + label, label)

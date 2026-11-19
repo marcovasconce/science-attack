@@ -8,12 +8,15 @@ var damage := DAMAGE
 var max_distance := MAX_DISTANCE
 var radius := 8.0
 var giant := false
+var overcharged := false
+var blast_radius := 0.0
 var special_shot := false
 var shooter: Node2D
 var direction := 1.0
 var travelled := 0.0
 var age := 0.0
 var height := 28.0
+var lane_target := INF
 var popping := false
 var pop_age := 0.0
 @onready var arena = get_tree().get_first_node_in_group("arena")
@@ -30,6 +33,7 @@ func _physics_process(dt: float) -> void:
 		return
 	var start := global_position
 	var finish := start + Vector2(direction * speed * dt,0)
+	if is_finite(lane_target): finish.y = move_toward(start.y, lane_target, speed * dt * 0.35)
 	var best_t := 1.01
 	var target: Node2D = null
 	var query := PhysicsRayQueryParameters2D.create(start,finish,1)
@@ -43,23 +47,25 @@ func _physics_process(dt: float) -> void:
 		if not is_instance_valid(body) or body.is_queued_for_deletion(): continue
 		if body.is_in_group("germs"):
 			if body.dead or (shooter.ai_controlled and arena.tutorial.step < 7): continue
+			if not arena.enemy_can_be_hit(body,height): continue
 		elif not body.is_in_group("training_dummies") and body.broken: continue
 		var offset: Vector2 = body.global_position - start
-		if absf(offset.y) > (38 if giant else 21): continue
 		var distance_ahead := offset.x * direction
 		var extent := 16+maxf(0,radius-8)
 		if distance_ahead < -extent or distance_ahead > speed * dt + extent: continue
 		var t := maxf(0.0,(distance_ahead - extent) / maxf(0.001,speed * dt))
+		var lane_depth := 38.0 if giant else (27.0 if overcharged else 21.0)
+		if absf(body.global_position.y - lerpf(start.y, finish.y, t)) > lane_depth: continue
 		if t < best_t:
 			best_t = t
 			target = body
 	if best_t <= 1:
 		global_position = start.lerp(finish,best_t)
-		if giant:
-			arena.special_area(shooter,global_position,140,65,damage)
+		if giant or blast_radius > 0:
+			_explode()
 		elif target != null:
 			if target.is_in_group("germs"):
-				arena.damage_enemy(shooter,target,damage,direction,global_position+Vector2(0,-height),not special_shot)
+				arena.damage_enemy(shooter,target,damage,direction,global_position+Vector2(0,-height),not special_shot,height,global_position)
 			elif target.is_in_group("training_dummies"):
 				arena.damage_training(shooter,target,damage,direction,not special_shot)
 			else: target.take_hit(damage,direction,shooter)
@@ -68,13 +74,24 @@ func _physics_process(dt: float) -> void:
 		global_position = finish
 		travelled += speed * dt
 		if travelled >= max_distance or position.x < 8 or position.x > arena.world_limit + 8:
-			if giant: arena.special_area(shooter,global_position,140,65,damage)
+			if giant or blast_radius > 0: _explode()
 			popping = true
 	queue_redraw()
+func _explode() -> void:
+	if giant and blast_radius == 0.0:
+		arena.special_area(shooter, global_position, 140, 65, damage, height)
+		return
+	var depth := blast_radius * 0.5 if giant else 36.0
+	arena.special_area(shooter, global_position, blast_radius, depth, damage, height)
+	var flash: Node2D = arena.spawn_impact(1, global_position + Vector2(0, -height), direction)
+	flash.scale = Vector2(3.5, 2.2) if giant else Vector2(2.25, 1.4)
+	flash.modulate = modulate
+	arena.start_camera_shake(2.0, 0.14)
+
 func _draw() -> void:
 	var center := Vector2(0,-height + roundf(sin(age*6)*2))
 	if popping:
-		var spread := radius + pop_age*(240 if giant else 48)
+		var spread := lerpf(radius, blast_radius, pop_age / 0.18) if blast_radius > 0 else radius + pop_age*(240 if giant else 48)
 		for i in 8:
 			var p := center + Vector2.from_angle(i*TAU/8)*spread
 			draw_rect(Rect2(p.round(),Vector2(2,2)),Color(0.65,0.95,1,1-pop_age/0.18))
@@ -83,7 +100,10 @@ func _draw() -> void:
 	for i in 24: ring.append(center + (Vector2.from_angle(i*TAU/24)*radius).round())
 	draw_colored_polygon(ring,Color(0.45,0.83,0.95,0.16))
 	ring.append(ring[0])
-	draw_polyline(ring,Color("99e8ff"),2 if giant else 1)
+	draw_polyline(ring,Color("99e8ff"),2 if giant or overcharged else 1)
+	if giant and overcharged:
+		draw_arc(center, radius * 0.76, 0, TAU, 24, Color("f6bdff"), 2, false)
+		draw_circle(center, radius * 0.34, Color("d585de"))
 	if giant:
 		draw_arc(center,radius-5,-2.8,-0.6,16,Color("ecffff"),2,false)
 		draw_rect(Rect2(center+Vector2(-15,-16),Vector2(6,4)),Color.WHITE)

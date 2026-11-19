@@ -1,5 +1,5 @@
 extends Node
-const ARRIVAL_LINE := "Vamos limpar a bancada! A estufa fica logo ali."
+const ARRIVAL_LINE := "Limpem a bancada! Depois, me encontrem lá embaixo."
 const QUIET_TIME := 12.0
 var unlocked := true
 var message_started := false

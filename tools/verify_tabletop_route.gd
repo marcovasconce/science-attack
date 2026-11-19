@@ -282,7 +282,7 @@ func run() -> void:
 	check(route.step == route.Step.SAMPLE,"The clean blue bottle becomes available")
 	p.position = route.SAMPLE_POINT
 	route._collect_pickups()
-	check(route.sample_taken and route.step == route.Step.EXIT and not stage.victory,"The bottle is collected by walking up to it")
+	check(route.sample_taken and stage.clean_sample and route.step == route.Step.EXIT and not stage.victory,"The bottle is collected by walking up to it")
 	# Loading a real checkpoint must still work after removing the old objectives.
 	var previous_id := stage.get_instance_id()
 	p.hp = 1
@@ -297,7 +297,7 @@ func run() -> void:
 	p = stage.players[0]
 	q = stage.players[1]
 	check(stage.get_instance_id() != previous_id and route.step == route.Step.EXIT,"F2 performs a real reload at the last checkpoint")
-	check(p.hp >= 40 and route.sample_taken and route.records[0] and route.supplies[0],"Checkpoint restores health, bottle and optional rewards")
+	check(p.hp >= 40 and route.sample_taken and stage.clean_sample and route.records[0] and route.supplies[0],"Checkpoint restores health, bottle and optional rewards")
 	check(route.tank_fill == 1 and route.water_fill[10] == 1 and route.get_node("PassageGate").openness == 1,"Checkpoint restores filled pipes and open doors")
 	var current_checkpoint: Dictionary = get_meta(route.CHECKPOINT_META).duplicate(true)
 	var legacy: Dictionary = current_checkpoint.duplicate(true)
@@ -325,7 +325,7 @@ func run() -> void:
 	check(stage.encounter.current_message != "stale_test" and stage.encounter.pending.is_empty(),"A stale queued puzzle hint is not shown later")
 	var lift = route.get_node("ExitElevator")
 	lift._physics_process(0)
-	check(lift.available and lift.next_scene_path.is_empty(),"Sample unlocks the reused elevator without a nonexistent destination")
+	check(lift.available and ResourceLoader.exists(lift.next_scene_path) and lift.travels_down,"Sample unlocks the descending elevator to an authored destination")
 	p.position = lift.pads[0].global_position
 	q.position = lift.pads[0].global_position
 	lift._physics_process(0.5)
@@ -346,14 +346,18 @@ func run() -> void:
 		if lift.plate_for(q) == 1: break
 	check(lift.plate_for(q) == 1,"Companion enters through the front and reaches the free lift mark")
 	lift._physics_process(0.41)
-	check(lift.state == lift.State.ASCENDING and stage.controls_locked and not route.complete,"Both riders start the shared ascent before chapter completion")
+	check(lift.state == lift.State.ASCENDING and stage.controls_locked and not route.complete,"Both riders start the shared ride before scene transition")
 	var feet: Vector2 = p.position
 	lift._physics_process(0.7)
-	check(p.position.y < feet.y and lift.cabin.position.y < 0,"Cabin and riders rise together")
+	check(p.position.y > feet.y and lift.cabin.position.y > 0,"Cabin and riders descend together")
 	lift._physics_process(2.0)
-	check(lift.state == lift.State.LOADING and lift.black.color.a == 1,"Ride finishes its fade before the chapter summary")
+	check(lift.state == lift.State.LOADING and lift.black.color.a == 1,"Ride finishes its fade before loading the lower lab")
+	for frame in 300:
+		await process_frame
+		if ResourceLoader.load_threaded_get_status(lift.next_scene_path) != ResourceLoader.THREAD_LOAD_IN_PROGRESS: break
 	lift._physics_process(0.7)
-	check(route.complete and route.result_panel.visible and lift.black.color.a == 0,"Missing greenhouse ends this chapter cleanly after the ride")
-	check(p.position == feet and lift.cabin.position == Vector2.ZERO,"Returning to explore retains a usable cabin and grounded riders")
+	for frame in 4: await process_frame
+	check(current_scene.scene_file_path == "res://scenes/gameplay/lower_lab_stage.tscn", "The real lower lab replaces the chapter summary")
+	check(current_scene.controls_locked and not current_scene.elevator.arrived,"The party arrives inside the new closed elevator")
 	if failures.is_empty(): print("PASS: ",checks," checks: nonblocking readable radio, live input, sequential connected water, disconnection, pause, simpler progression, contextual keys, optional pickups, automatic cleaning, real F2 restore and companion exit")
 	quit(0 if failures.is_empty() else 1)

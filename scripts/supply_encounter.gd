@@ -1,6 +1,6 @@
 extends Node
 ## First combat sector -> HUD arrow -> physical NPC and equipment robot.
-const TIBURCIO_LINE := "finalmente chegaram. vamos, peguem seus equipamentos no robô, vocês irão precisar de muito reforços agora, esses germes estão por toda a parte!"
+const TIBURCIO_LINE := "Finalmente chegaram! Peguem seus equipamentos no robô. Vocês vão precisar de reforços. Esses germes estão por toda parte!"
 const ULTIMATE_EXPLANATION_TIME := 7.0
 const ULTIMATE_PRAISE_TIME := 5.0
 const ULTIMATE_FAREWELL_TIME := 6.0
@@ -92,7 +92,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	for player in arena.players:
 		if player.ai_controlled or player.down: continue
-		if not event.is_action_pressed("p%d_interact" % player.player_id): continue
+		if not GameInput.event_for(event, player.player_id, "interact"): continue
 		if is_modal():
 			if player.player_id != active_interactor: return
 			if dialogue.active: dialogue.advance()
@@ -114,7 +114,7 @@ func _resume_gameplay() -> void:
 func objective_text() -> String:
 	if arena.elevator.both_equipped():
 		if not ultimate_done: return "TESTE SUA ULTIMATE"
-		return "SIGA AO ELEVADOR" if arena.elevator.wants_arrow() else "UM EM CADA PLATAFORMA"
+		return "SIGA AO ELEVADOR" if arena.elevator.wants_arrow() else arena.elevator.boarding_hint()
 	return "FALE COM TIBÚRCIO" if not talked else "EQUIPE A DUPLA"
 
 func record_ultimate(player) -> void:
@@ -135,6 +135,7 @@ func update_ultimate_lesson(dt: float) -> void:
 	bubble.show()
 	var message: Label = bubble.get_node("Message")
 	var key: Label = bubble.get_node("Key")
+	GameInput.clear_hint(key)
 	if ultimate_stage == 1:
 		message.text = "Meia barra: especial.\nBarra cheia: ultimate!"
 		key.text = "OLHE A BARRA AZUL"
@@ -152,6 +153,10 @@ func update_ultimate_lesson(dt: float) -> void:
 			if not ultimate_used[player.player_id]: pending.append(player)
 		message.text = "Enchi a barra para o treino.\nUse sua ultimate!"
 		key.text = " / ".join(pending.map(func(player): return "Q" if player.player_id == 0 else "I"))
+		if not pending.is_empty():
+			var players := pending.map(func(player): return player.player_id)
+			var keys := pending.map(func(player): return "Q" if player.player_id == 0 else "I")
+			GameInput.multi_hint(key, players, "special", keys, key.text)
 		if pending.is_empty():
 			message.text = "Isso! Essa é a sua ultimate!"
 			key.text = "BOA!"

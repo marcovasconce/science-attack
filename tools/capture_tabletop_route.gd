@@ -139,9 +139,18 @@ func run() -> void:
 	lift._physics_process(0.41)
 	await capture("11_elevator_boarded")
 	lift._physics_process(0.8)
-	await capture("12_elevator_rising")
+	await capture("12_elevator_descending")
 	lift._physics_process(2.0)
+	await capture("13_elevator_loading")
+	for frame in 300:
+		await process_frame
+		if ResourceLoader.load_threaded_get_status(lift.next_scene_path) != ResourceLoader.THREAD_LOAD_IN_PROGRESS: break
 	lift._physics_process(0.7)
-	await capture("13_elevator_chapter_end")
+	for frame in 4: await process_frame
+	stage = current_scene
+	stage.set_process(false)
+	stage.elevator.set_physics_process(false)
+	stage.elevator._physics_process(3)
+	await capture("14_lower_lab_arrival")
 	print("PASS: simpler route captures saved as art/previews/kids_*.png")
 	quit()

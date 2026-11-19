@@ -1,6 +1,10 @@
 extends Node2D
 ## Draws on a native pixel canvas. The original avatar textures stay untouched.
 const BRUSH = preload("res://assets/animations/toothbrush_pixel.tres")
+const NOVA = preload("res://assets/animations/bubble_blaster_mechanical.tres")
+const SOLAR_RECT := Rect2(-7, -10, 46, 13)
+# This vertex color lets the avatar compositor apply the solar palette to the brush alone.
+const SOLAR_PALETTE := Color(1.0, 1.0, 0.51)
 const MAX_ARMED = preload("res://assets/animations/max_armed_poses.tres")
 const AMANDA_ARMED = preload("res://assets/animations/amanda_armed_poses.tres")
 const Motion = preload("res://scripts/brush_motion.gd")
@@ -10,22 +14,26 @@ var frames: SpriteFrames
 var animation: StringName = &"idle"
 var frame := 0
 var amanda := false
+var upgraded := false
 var origin := Vector2(48,64)
 
 func _draw() -> void:
-	if frames != null: paint(self,frames,animation,frame,origin,amanda)
+	if frames != null: paint(self,frames,animation,frame,origin,amanda,upgraded)
 
-static func paint(canvas: CanvasItem, sprites: SpriteFrames, anim: StringName, index: int, foot: Vector2, pink: bool) -> void:
+static func paint(canvas: CanvasItem, sprites: SpriteFrames, anim: StringName, index: int, foot: Vector2, pink: bool, overcharged := false) -> void:
 	var name := String(anim)
 	if not sprites.has_animation(anim): return
 	index = clampi(index,0,sprites.get_frame_count(anim)-1)
 	# These are complete newly drawn armed sprites, including both gripping arms.
 	if name in ["brush_idle","brush_run","brush_jump"] or name.begins_with("bubbles_"):
-		_paint_carried(canvas,name,index,foot,pink)
+		if overcharged:
+			_paint_upgraded_carry(canvas, sprites.get_frame_texture(anim, index), name, index, foot, pink)
+		else:
+			_paint_carried(canvas,name,index,foot,pink)
 		return
 	var body := sprites.get_frame_texture(anim,index)
 	if name == "brush_spin":
-		_paint_spin(canvas,body,index,foot,pink)
+		_paint_spin(canvas,body,index,foot,pink,overcharged)
 		return
 	var hand := hand_offset(body)
 	var angle := -35.0
@@ -49,11 +57,11 @@ static func paint(canvas: CanvasItem, sprites: SpriteFrames, anim: StringName, i
 		var current := deg_to_rad(angle)
 		# Square, unfiltered streaks are drawn behind the weapon at the contact arc.
 		for ring in 2:
-			var radius := 28.0+ring*3
+			var radius := (37.0 if overcharged else 28.0) + ring * 3
 			for step in 6:
 				var a := lerpf(previous,current,step/6.0)
 				var b := lerpf(previous,current,(step+1)/6.0)
-				canvas.draw_line((grip+Vector2.from_angle(a)*radius).round(),(grip+Vector2.from_angle(b)*radius).round(),Color("c8fcff") if ring == 0 else Color("42cadb"),2 if name == "brush_slam" else 1,false)
+				canvas.draw_line((grip+Vector2.from_angle(a)*radius).round(),(grip+Vector2.from_angle(b)*radius).round(),(Color("fff1b7") if ring == 0 else Color("ff9f3d")) if overcharged else (Color("c8fcff") if ring == 0 else Color("42cadb")),2 if name == "brush_slam" else 1,false)
 	# Lean around the feet; the small canvas keeps all rotated edges pixelated.
 	canvas.draw_set_transform(body_origin,lean)
 	canvas.draw_texture(body,Vector2(-16,-31))
@@ -66,7 +74,7 @@ static func paint(canvas: CanvasItem, sprites: SpriteFrames, anim: StringName, i
 		_draw_arm(canvas,body_origin+Vector2(-3,-10).rotated(lean),second_hand,pink)
 		_draw_arm(canvas,body_origin+Vector2(3,-10).rotated(lean),grip,pink)
 		canvas.draw_set_transform(grip,deg_to_rad(angle))
-		canvas.draw_texture_rect(BRUSH,BRUSH_RECT,false)
+		_draw_brush(canvas, overcharged)
 		canvas.draw_set_transform(Vector2.ZERO)
 		_draw_hand(canvas,grip,pink)
 		_draw_hand(canvas,second_hand,pink)
@@ -97,6 +105,28 @@ static func _paint_carried(canvas: CanvasItem, name: String, index: int, foot: V
 		canvas.draw_rect(Rect2((foot+Vector2(-24,1)).round(),Vector2(2,1)),Color("678b99"))
 		canvas.draw_rect(Rect2((foot+Vector2(-28,0)).round(),Vector2(1,1)),Color("8fa9af"))
 
+static func _paint_upgraded_carry(canvas: CanvasItem, body: AtlasTexture, name: String, index: int, foot: Vector2, pink: bool) -> void:
+	var is_brush := name.begins_with("brush_")
+	var pose := foot
+	if name in ["bubbles_attack", "bubbles_special", "bubbles_ultimate"]:
+		pose.x -= [0, 2, 3, 1][index % 4]
+	var grip := (pose + hand_offset(body)).round()
+	if is_brush:
+		var angle := deg_to_rad(-62.0 if name == "brush_idle" else 22.0)
+		canvas.draw_set_transform(grip, angle)
+		_draw_brush(canvas, true)
+		canvas.draw_set_transform(Vector2.ZERO)
+	canvas.draw_texture(body, pose + Vector2(-16, -31))
+	if not is_brush:
+		var support := grip + Vector2(9, -2)
+		_draw_arm(canvas, pose + Vector2(-2, -10), support, pink)
+		canvas.draw_texture_rect(NOVA, Rect2(grip + Vector2(-6, -13), Vector2(27, 17)), false, Color("f3b4ff"))
+		_draw_hand(canvas, support, pink)
+	_draw_hand(canvas, grip, pink)
+
+static func _draw_brush(canvas: CanvasItem, overcharged: bool) -> void:
+	canvas.draw_texture_rect(BRUSH, SOLAR_RECT if overcharged else BRUSH_RECT, false, SOLAR_PALETTE if overcharged else Color.WHITE)
+
 static func _draw_arm(canvas: CanvasItem, shoulder: Vector2, hand: Vector2, pink: bool) -> void:
 	var elbow := shoulder.lerp(hand,0.5)+Vector2(-2,2)
 	var outline := Color("04193f") if pink else Color("2a304e")
@@ -105,7 +135,7 @@ static func _draw_arm(canvas: CanvasItem, shoulder: Vector2, hand: Vector2, pink
 		canvas.draw_line(segment[0].round(),segment[1].round(),outline,4,false)
 		canvas.draw_line(segment[0].round(),segment[1].round(),color,2,false)
 
-static func _paint_spin(canvas: CanvasItem, body: Texture2D, index: int, foot: Vector2, pink: bool) -> void:
+static func _paint_spin(canvas: CanvasItem, body: Texture2D, index: int, foot: Vector2, pink: bool, overcharged: bool) -> void:
 	var angle := index*TAU/12.0
 	var center := foot+Vector2(0,-14)
 	var grip := (center+Vector2(cos(angle)*4,sin(angle)*2)).round()
@@ -116,19 +146,19 @@ static func _paint_spin(canvas: CanvasItem, body: Texture2D, index: int, foot: V
 			points.append((center+Vector2(cos(a)*(33+ring*3),sin(a)*(20+ring*2))).round())
 		canvas.draw_polyline(points,Color("f0ffff") if ring == 0 else Color("48d3e3"),2 if ring == 0 else 1,false)
 	var weapon_angle := atan2(sin(angle)*0.65,cos(angle))
-	if sin(angle)<0: _spin_brush(canvas,grip,weapon_angle,pink)
+	if sin(angle)<0: _spin_brush(canvas,grip,weapon_angle,pink,overcharged)
 	var turn := (0.5+absf(cos(angle))*0.5)*(-1 if cos(angle)<0 else 1)
 	canvas.draw_set_transform(foot+Vector2(0,-index%2),0,Vector2(turn,1))
 	canvas.draw_texture(body,Vector2(-16,-31))
 	canvas.draw_set_transform(Vector2.ZERO)
-	if sin(angle)>=0: _spin_brush(canvas,grip,weapon_angle,pink)
+	if sin(angle)>=0: _spin_brush(canvas,grip,weapon_angle,pink,overcharged)
 	for i in 3:
 		var a := angle-i*0.4
 		canvas.draw_rect(Rect2((center+Vector2(cos(a)*38,sin(a)*24)).round(),Vector2(2,2)),Color("d9ffff"))
 
-static func _spin_brush(canvas: CanvasItem, grip: Vector2, angle: float, pink: bool) -> void:
+static func _spin_brush(canvas: CanvasItem, grip: Vector2, angle: float, pink: bool, overcharged: bool) -> void:
 	canvas.draw_set_transform(grip,angle)
-	canvas.draw_texture_rect(BRUSH,BRUSH_RECT,false)
+	_draw_brush(canvas, overcharged)
 	canvas.draw_set_transform(Vector2.ZERO)
 	_draw_hand(canvas,grip,pink)
 	_draw_hand(canvas,(grip+Vector2.from_angle(angle)*6).round(),pink)

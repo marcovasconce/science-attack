@@ -2,8 +2,8 @@
 
 Artes geradas pela ferramenta integrada `image_gen`, usando a skill `imagegen`.
 
-- `assets/effects/enemy_impact.png`: substitui o antigo anel de fogo. Referência enviada: `codex-clipboard-1616ff3e-4e0f-41ec-9d03-14e354434b38.png`. Seis quadros, estrela branca e amarela, 0,28 s.
-- `assets/props/metal_crate_break.png`: referência enviada `codex-clipboard-0d69f1c1-00c8-47c6-a06e-eab173cbc391.png`. Quadros 0/1: intacta e danificada. Quadros 2–5: desmonte em 0,44 s.
+- `assets/effects/enemy_impact.png`: substitui o antigo anel de fogo. Referência enviada: (imagem anexada). Seis quadros, estrela branca e amarela, 0,28 s.
+- `assets/props/metal_crate_break.png`: referência enviada (imagem anexada). Quadros 0/1: intacta e danificada. Quadros 2–5: desmonte em 0,44 s.
 - `assets/pickups/construction_salvage.png`: seis peças originais detalhadas, usadas nos drops, nos destroços físicos e na construção.
 
 Todos os atlas usam grade de três colunas por duas linhas e transparência original. A leitura das regiões e o redimensionamento são feitos pelo Godot, sem alterar as imagens. O efeito azul existente das caixas foi preservado.

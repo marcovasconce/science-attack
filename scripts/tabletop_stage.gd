@@ -1,4 +1,5 @@
 extends "res://scripts/micro_arena.gd"
+const Party = preload("res://scripts/party_transfer.gd")
 const ENTRY_META := "tabletop_entry_state"
 const CHECKPOINT_META := "tabletop_checkpoint"
 const RETRY_META := "tabletop_retry"
@@ -16,8 +17,7 @@ func _ready() -> void:
 	camera_max_x = world_limit-320
 	built = true
 	_restore_party()
-	$HUD/TeamHUD.layout_changed.connect(_on_hud_layout_changed)
-	$HUD/TeamHUD.bind(players)
+	bind_team_hud()
 	controls_locked = true
 	$HUD/AdvanceArrow.hide()
 	_setup_jump_obstacles()
@@ -102,6 +102,12 @@ func obstacle_ahead(player, direction: Vector2) -> bool:
 func is_assembling(player) -> bool:
 	return is_instance_valid(puzzle) and puzzle.is_building(player)
 
+func assembly_facing(player) -> float:
+	return signf(puzzle.machine.global_position.x - player.global_position.x)
+
+func stop_assembling(player) -> void:
+	if is_instance_valid(puzzle): puzzle.stop_building(player)
+
 func ai_puzzle_destination(player) -> Variant:
 	return route.ai_destination(player) if is_instance_valid(route) else null
 
@@ -120,35 +126,23 @@ func _restore_party() -> void:
 		get_tree().set_meta(ENTRY_META,party.duplicate(true))
 	elif get_tree().has_meta(ENTRY_META):
 		party = get_tree().get_meta(ENTRY_META).duplicate(true)
-	for i in players.size():
-		var player = players[i]
-		var saved: Dictionary = party[i] if i<party.size() else {}
-		player.max_hp = maxi(1,int(saved.get("max_hp",100)))
-		player.hp = clampi(int(saved.get("hp",player.max_hp)),1,player.max_hp)
-		player.energy = clampf(float(saved.get("energy",100)),0,100)
-		player.healing_flasks = maxi(0,int(saved.get("healing_flasks",5)))
-		player.flask_heal_amount = maxi(1,int(saved.get("flask_heal_amount",25)))
-		player.ai_controlled = bool(saved.get("ai_controlled",i==1))
-		var weapon: String = saved.get("weapon","brush" if i==0 else "bubbles")
-		if not player.equip_weapon(weapon): player.equip_weapon("brush" if i==0 else "bubbles")
-		player.get_node("PlayerMarker").text = "IA" if player.ai_controlled else "P%d" % (i+1)
+	Party.apply(self, party)
 
 func _process(dt: float) -> void:
-	if Input.is_action_just_pressed("restart"):
+	if GameInput.retry_requested(self):
 		if get_tree().has_meta(CHECKPOINT_META): get_tree().set_meta(RETRY_META,true)
-		get_tree().reload_current_scene()
+		restart_with_current_team()
 		return
 	var departing: bool = route.step == route.Step.EXIT and route.get_node("ExitElevator").is_transitioning()
 	if not elevator.is_transitioning() and not departing and not encounter.is_modal() and not route.result_panel.visible:
-		if Input.is_action_just_pressed("controls"):
+		if GameInput.help_requested():
 			$HUD/ControlsPanel.visible = not $HUD/ControlsPanel.visible
 			controls_locked = $HUD/ControlsPanel.visible
-		if Input.is_action_just_pressed("join"):
+		if Input.is_action_just_pressed("join") and not controls_locked:
 			players[1].ai_controlled = not players[1].ai_controlled
-	var center: Vector2 = (players[0].position+players[1].position)*0.5
+	var center := camera_center()
 	$Camera2D.position.x = clampf(center.x,320,camera_max_x)
-	for player in players:
-		player.position.x = clampf(player.position.x,$Camera2D.position.x-300,$Camera2D.position.x+300)
+	keep_living_players_in_view($Camera2D.position.x, 300)
 	update_camera_shake(dt)
 	$Environment.follow_camera($Camera2D.position.x)
 	if not controls_locked and not encounter.message_started and elevator.arrived:
@@ -182,7 +176,7 @@ func _process(dt: float) -> void:
 		$HUD/AdvanceArrow.direction = -1 if backwards else 1
 		puzzle.hint.hide()
 	$HUD/Goal.visible = not encounter.dialogue.active and not departing
-	status.text = "F2  TENTAR DE NOVO" if players[0].down and players[1].down else ""
+	GameInput.defeat_hint(status, "F2  TENTAR DE NOVO", players[0].down and players[1].down)
 
 func _spawn_tabletop_wave(index: int) -> void:
 	spawn_index += 1

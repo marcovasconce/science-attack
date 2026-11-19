@@ -1,5 +1,7 @@
 @tool
 extends Control
+const MenuSkin = preload("res://scripts/menu_button.gd")
+var bezel := MenuSkin.panel(Color(0.18, 0.24, 0.38))
 ## One reusable, screen-space panel. The compact version is the AI companion row.
 @export var compact := false:
 	set(value):
@@ -15,6 +17,8 @@ var damage_delay := 0.0
 var heal_flash := 0.0
 var last_combo := 0
 var combo_pop := 0.0
+var special_level := 0
+var special_glow := 0.0
 
 func _ready() -> void:
 	_layout()
@@ -24,6 +28,7 @@ func bind(actor: Node) -> void:
 	$Portrait.texture = actor.sprite.sprite_frames.get_frame_texture("idle", 0)
 	accent = Color("c391f2") if actor.player_id == 1 else Color("55cced")
 	last_hp = actor.hp
+	special_level = int(actor.energy / 50.0)
 	$DamageTrail.max_value = actor.max_hp
 	$DamageTrail.value = actor.hp
 	refresh(0.0)
@@ -51,7 +56,14 @@ func refresh(dt: float) -> void:
 	$DamageTrail.max_value = player.max_hp
 	$Health.value = hp
 	$Special.value = player.energy
-	$Name.text = ("IA" if player.ai_controlled else "P%d" % (player.player_id + 1)) + "  " + ("MAX" if player.player_id == 0 else "AMANDA")
+	var level := int(player.energy / 50.0)
+	if level > special_level: special_glow = 0.42
+	special_level = level
+	special_glow = maxf(0.0, special_glow - dt)
+	$SpecialLabel.modulate = Color.WHITE.lerp(Color("ffe18c"), special_glow / 0.42)
+	var character_name := "MAX" if player.player_id == 0 else "AMANDA"
+	var player_id := "IA" if player.ai_controlled else "P%d" % (player.player_id + 1)
+	$Name.text = "%s  %s" % [player_id, character_name] if player.arena.show_player_ids() else character_name
 	$HealthValue.text = "CAÍDO" if player.down else "%d/%d" % [hp, player.max_hp]
 	$HealthValue.modulate = Color("ff9f88") if player.down else Color.WHITE
 	$Count.text = str(player.healing_flasks)
@@ -59,7 +71,15 @@ func refresh(dt: float) -> void:
 	$Flask.modulate = Color("748392") if player.healing_flasks == 0 else Color.WHITE
 	$HealKey.text = "AUTO" if player.ai_controlled else ("[R]" if player.player_id == 0 else "[O]")
 	var special_key := "Q" if player.player_id == 0 else "I"
-	$SpecialLabel.text = "%s %s" % [special_key,"100%" if player.energy >= 100 else ("50%" if player.energy >= 50 else "ESPEC.")]
+	var special_text := "100%" if level == 2 else ("50%" if level == 1 else "ESPEC.")
+	$SpecialLabel.text = "%s %s" % [special_key, special_text]
+	if not Engine.is_editor_hint():
+		if player.ai_controlled:
+			GameInput.clear_hint($HealKey)
+			GameInput.clear_hint($SpecialLabel)
+		else:
+			GameInput.label_hint($HealKey, player.player_id, "heal", $HealKey.text)
+			GameInput.label_hint($SpecialLabel, player.player_id, "special", $SpecialLabel.text, special_text)
 	$SpecialDivider.color = Color("f9de7c") if player.energy >= 100 else Color("ddf7ff")
 	$Portrait.modulate = Color("7b8391") if player.down else Color.WHITE
 	queue_redraw()
@@ -73,7 +93,7 @@ func _layout() -> void:
 	size = Vector2(204, 36) if compact else Vector2(232, 62)
 	_place("Portrait", Rect2(6, 5, 26, 26) if compact else Rect2(9, 9, 36, 36))
 	_place("Name", Rect2(40, 3, 120, 8) if compact else Rect2(54, 6, 164, 10))
-	$Name.add_theme_font_size_override("font_size", 6 if compact else 8)
+	$Name.add_theme_font_size_override("font_size", 8)
 	var health_rect := Rect2(40, 14, 114, 7) if compact else Rect2(54, 20, 164, 9)
 	_place("DamageTrail", health_rect)
 	_place("Health", health_rect)
@@ -82,9 +102,9 @@ func _layout() -> void:
 	_place("Flask", Rect2(160, 8, 12, 18) if compact else Rect2(184, 31, 16, 24))
 	_place("Count", Rect2(178, 12, 26, 12) if compact else Rect2(204, 35, 26, 14))
 	$Count.add_theme_font_size_override("font_size", 8 if compact else 10)
-	_place("HealthValue", Rect2(54, 48, 54, 9))
-	_place("SpecialLabel", Rect2(112, 48, 66, 9))
-	_place("HealKey", Rect2(202, 51, 28, 9))
+	_place("HealthValue", Rect2(54, 47, 58, 12))
+	_place("SpecialLabel", Rect2(114, 47, 68, 12))
+	_place("HealKey", Rect2(202, 48, 28, 11))
 	$HitCombo.pivot_offset = Vector2(102, 12)
 	$HealthValue.visible = not compact
 	$SpecialLabel.visible = not compact
@@ -95,7 +115,7 @@ func _draw() -> void:
 	var w := size.x
 	var h := size.y
 	var border := PackedVector2Array([Vector2(5, 0), Vector2(w - 2, 0), Vector2(w, 2), Vector2(w, h - 8), Vector2(w - 8, h), Vector2(0, h), Vector2(0, 5)])
-	draw_colored_polygon(border, Color("080f1b"))
+	draw_style_box(bezel, Rect2(Vector2.ZERO, size))
 	var line := border.duplicate()
 	line.append(border[0])
 	draw_polyline(line, Color("54667c"), 1.0)

@@ -1,5 +1,6 @@
 extends Node2D
-## Both living players must occupy distinct plates before the cabin departs.
+## Each survivor must occupy a distinct plate before the cabin departs.
+const Party = preload("res://scripts/party_transfer.gd")
 signal departure_started
 signal next_phase_requested
 enum State { WAITING, ASCENDING, LOADING, COMPLETE }
@@ -7,6 +8,7 @@ const BOARD_TIME := 0.4
 const ASCENT_TIME := 2.6
 const ASCENT_HEIGHT := 230.0
 @export_file("*.tscn") var next_scene_path := ""
+@export var travels_down := false
 var state := State.WAITING
 var available := false
 var ready_time := 0.0
@@ -46,7 +48,7 @@ func prepare_departure_ui() -> void:
 func wants_arrow() -> bool:
 	if not available or is_transitioning(): return false
 	for player in arena.players:
-		if not player.ai_controlled and player.global_position.x < global_position.x-130: return true
+		if not player.ai_controlled and not player.down and player.global_position.x < global_position.x-130: return true
 	return false
 
 func plate_for(player) -> int:
@@ -68,6 +70,10 @@ func ai_boarding_destination(player) -> Variant:
 		return Vector2(clampf(player.global_position.x,global_position.x-96,global_position.x+96),global_position.y)
 	return pads[1-human_plate].global_position
 
+func boarding_hint() -> String:
+	if arena.players[0].down != arena.players[1].down: return "PISE EM UMA MARCA"
+	return "UM EM CADA MARCA"
+
 func _physics_process(dt: float) -> void:
 	if state == State.ASCENDING:
 		_advance_ascent(dt)
@@ -85,12 +91,14 @@ func _physics_process(dt: float) -> void:
 		var plate := plate_for(player)
 		if plate>=0 and occupants[plate]==null: occupants[plate] = player
 	for i in pads.size(): pads[i].occupied = occupants[i]!=null
-	var ready: bool = available and both_equipped() and occupants[0]!=null and occupants[1]!=null
+	var boarded := 2 - occupants.count(null)
+	var required := 2 if not arena.players[0].down and not arena.players[1].down else 1
+	var ready: bool = available and both_equipped() and boarded == required
 	if ready:
 		for player in occupants:
-			if player.attack_time>0 or player.specials.active or player.dash>0 or player.stun>0: ready = false
+			if player != null and not player.can_assemble(): ready = false
 	ready_time = ready_time+dt if ready else 0.0
-	$Hint.text = "PRONTOS!" if ready else ("UM EM CADA PLATAFORMA" if available else ("TESTEM AS ULTIMATES" if both_equipped() else "EQUIPEM AS DUAS ARMAS"))
+	$Hint.text = "PRONTOS!" if ready else (boarding_hint() if available else ("TESTEM AS ULTIMATES" if both_equipped() else "EQUIPEM AS DUAS ARMAS"))
 	if ready_time>=BOARD_TIME: _start_ascent()
 
 func _start_ascent() -> void:
@@ -101,23 +109,26 @@ func _start_ascent() -> void:
 	$Hint.hide()
 	rider_origins.clear()
 	for player in arena.players:
+		if player.down:
+			var free_plate := 0 if occupants[0] == null else 1
+			player.global_position = pads[free_plate].global_position
 		rider_origins.append(player.global_position)
 		player.velocity = Vector2.ZERO
 		player.buffered = false
 		player.dash = 0
 		player.dash_visual.clear()
 		player.get_node("Visual").rotation = 0
-		player.sprite.play(player.equipped_weapon+"_idle")
+		if not player.down: player.sprite.play(player.equipped_weapon+"_idle")
 		player.update_sprite_alignment()
 	departure_started.emit()
 
 func _advance_ascent(dt: float) -> void:
 	travel_time = minf(ASCENT_TIME,travel_time+dt)
 	var progress := travel_time/ASCENT_TIME
-	var rise := ASCENT_HEIGHT*smoothstep(0.0,1.0,progress)
+	var rise := ASCENT_HEIGHT*smoothstep(0.0,1.0,progress) * (-1.0 if travels_down else 1.0)
 	cabin.position.y = -rise
 	for i in arena.players.size(): arena.players[i].global_position = rider_origins[i]-Vector2(0,rise)
-	black.color.a = smoothstep(0.42,0.94,progress)
+	SceneFx.paint(black, smoothstep(0.42,0.94,progress), SceneFx.WIPE, Vector2.UP)
 	if progress>=1:
 		state = State.LOADING
 		black.color.a = 1
@@ -140,10 +151,7 @@ func _update_loading(dt: float) -> void:
 		if status==ResourceLoader.THREAD_LOAD_LOADED:
 			var next_scene = ResourceLoader.load_threaded_get(next_scene_path)
 			# Preserve loadout and resources for the next stage to consume.
-			var party: Array[Dictionary] = []
-			for player in arena.players:
-				party.append({"player_id":player.player_id,"weapon":player.equipped_weapon,"hp":player.hp,"max_hp":player.max_hp,"energy":player.energy,"healing_flasks":player.healing_flasks,"flask_heal_amount":player.flask_heal_amount,"ai_controlled":player.ai_controlled})
-			get_tree().set_meta("party_state",party)
+			get_tree().set_meta("party_state", Party.capture(arena))
 			if next_scene is PackedScene and get_tree().change_scene_to_packed(next_scene)==OK:
 				state = State.COMPLETE
 				return

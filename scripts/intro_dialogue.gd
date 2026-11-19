@@ -4,25 +4,24 @@ extends Control
 signal completed
 
 const PIXEL_FONT := preload("res://assets/fonts/PressStart2P-Regular.ttf")
+const MenuSkin := preload("res://scripts/menu_button.gd")
 const MAX_PORTRAIT := preload("res://assets/portraits/dr_max_dialogue.png")
 const AMANDA_PORTRAIT := preload("res://assets/portraits/amanda_dialogue.png")
 const LETTERS_PER_SECOND := 38.0
-const BOX_SIZE := Vector2(608, 148)
+const BOX_SIZE := Vector2(608, 118)
 const BOX_POSITION := Vector2(16, 26)
 const LINES := [
 	{
 		"speaker": "DOUTOR MAX",
-		"text": "Os germes estão fora de controle! Não podemos deixar que escapem!",
+		"text": "Amanda, os germes escaparam da bancada!",
 		"right": false,
-		"fill": Color("102346"),
 		"edge": Color("5489d6"),
 		"accent": Color("b2d9ff"),
 	},
 	{
 		"speaker": "DOUTORA AMANDA",
-		"text": "Vamos dormir nas cápsulas. Os microavatares vão combater os germes!",
+		"text": "Pras cápsulas! Vamos atrás deles com nossos avatares.",
 		"right": true,
-		"fill": Color("361b4b"),
 		"edge": Color("a774c7"),
 		"accent": Color("e6c5ff"),
 	},
@@ -34,8 +33,9 @@ var line_elapsed := 0.0
 var presentation_elapsed := 0.0
 var fully_revealed := false
 var portrait_on_right := false
-var panel_fill := Color("102346")
 var panel_edge := Color("5489d6")
+var card := MenuSkin.panel(Color(0.22, 0.33, 0.55))
+var title_plate := MenuSkin.dialogue_name()
 var body: Label
 var speaker_name: Label
 var hint: Label
@@ -63,7 +63,7 @@ func _ready() -> void:
 		portraits.append(crop)
 	portrait = $SpeakingPortrait
 	portrait.name = "SpeakingPortrait"
-	portrait.size = Vector2(100, 114)
+	portrait.size = Vector2(82, 96)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -72,14 +72,16 @@ func _ready() -> void:
 	speaker_name.name = "Speaker"
 	body = $Speech
 	_style_label(body, font)
+	body.add_theme_font_size_override("font_size", 10)
 	body.name = "Speech"
-	body.size = Vector2(462, 90)
+	body.size = Vector2(486, 56)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_theme_constant_override("line_spacing", 6)
 	body.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	hint = $ContinueHint
 	_style_label(hint, font)
 	hint.name = "ContinueHint"
+	GameInput.prompts_changed.connect(_update_hint)
 	reset()
 
 
@@ -121,18 +123,19 @@ func _show_line(index: int) -> void:
 	fully_revealed = false
 	var line: Dictionary = LINES[index]
 	portrait_on_right = line.right
-	panel_fill = line.fill
 	panel_edge = line.edge
+	card = MenuSkin.panel(Color(0.42, 0.29, 0.54) if portrait_on_right else Color(0.22, 0.33, 0.55))
+	title_plate = MenuSkin.dialogue_name(portrait_on_right)
 	portrait.texture = portraits[index]
-	portrait.position = Vector2(494 if portrait_on_right else 12, 8)
-	var text_x := 18.0 if portrait_on_right else 128.0
+	portrait.position = Vector2(514 if portrait_on_right else 12, 8)
+	var text_x := 18.0 if portrait_on_right else 110.0
 	speaker_name.position = Vector2(text_x, 15)
 	speaker_name.text = line.speaker
 	speaker_name.modulate = line.accent
 	body.position = Vector2(text_x, 37)
 	body.text = line.text
 	body.visible_characters = 0
-	hint.position = Vector2(18, 132)
+	hint.position = Vector2(text_x, 98)
 	hint.modulate = line.accent
 	_update_hint()
 	queue_redraw()
@@ -170,17 +173,19 @@ func advance() -> void:
 func _update_hint() -> void:
 	if not fully_revealed:
 		hint.text = ""
+		GameInput.clear_hint(hint)
 	else:
-		hint.text = "ENTER  >"
+		GameInput.label_hint(hint, -1, "accept", "ENTER  CONTINUAR", "CONTINUAR")
 
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2(3, 4), BOX_SIZE), Color(0.005, 0.01, 0.025, 0.65))
-	draw_rect(Rect2(Vector2.ZERO, BOX_SIZE), Color("080e21"))
-	draw_rect(Rect2(Vector2.ONE, BOX_SIZE - Vector2(2, 2)), panel_edge)
-	draw_rect(Rect2(Vector2(3, 3), BOX_SIZE - Vector2(6, 6)), panel_fill)
-	draw_rect(Rect2(5, 4, 598, 1), Color(panel_edge, 0.5))
-	var portrait_x := 492.0 if portrait_on_right else 10.0
-	draw_rect(Rect2(portrait_x, 7, 104, 117), Color("080e21"))
-	draw_rect(Rect2(portrait_x + 1, 8, 102, 115), Color(panel_edge, 0.12))
-	draw_line(Vector2(12, 126), Vector2(596, 126), Color(panel_edge, 0.55), 1.0)
+	draw_style_box(card, Rect2(Vector2.ZERO, BOX_SIZE))
+	var title_x := 12.0 if portrait_on_right else 104.0
+	draw_style_box(title_plate, Rect2(title_x, 8, 159, 22))
+	var portrait_x := 512.0 if portrait_on_right else 10.0
+	draw_rect(Rect2(portrait_x, 7, 86, 101), Color("080e21"))
+	draw_rect(Rect2(portrait_x + 1, 8, 84, 99), Color(panel_edge, 0.12))
+	var divider_start := 12.0 if portrait_on_right else 104.0
+	var divider_end := 504.0 if portrait_on_right else 596.0
+	draw_line(Vector2(divider_start, 91), Vector2(divider_end, 91), Color(panel_edge, 0.55), 1.0)

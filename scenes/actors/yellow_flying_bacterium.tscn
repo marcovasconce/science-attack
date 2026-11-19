@@ -1,0 +1,9 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/yellow_flying_bacterium.gd" id="script"]
+[sub_resource type="CircleShape2D" id="shape"]
+radius = 11.0
+[node name="YellowFlyingBacterium" type="CharacterBody2D" groups=["germs"]]
+texture_filter = 1
+script = ExtResource("script")
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("shape")

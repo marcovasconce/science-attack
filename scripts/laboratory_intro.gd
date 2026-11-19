@@ -12,19 +12,20 @@ const Shrinking := preload("res://scripts/sleep_sequence.gd")
 const Foreground := preload("res://scripts/laboratory_foreground.gd")
 const MAX_SHEET := preload("res://assets/characters/dr_max.png")
 const SCIENTIST_SHEET := preload("res://assets/characters/scientist.png")
+const PIXEL_FONT := preload("res://assets/fonts/PressStart2P-Regular.ttf")
 const VIEW := Vector2(640, 360)
 const ALARM_PERIOD := 1.8
-const MAX_ENTRANCE := 3.0
-const SCIENTIST_ENTRANCE := 3.0
-const MAX_ARRIVAL := 5.70
-const SCIENTIST_ARRIVAL := 5.70
+const MAX_ENTRANCE := 0.85
+const SCIENTIST_ENTRANCE := 1.15
+const MAX_ARRIVAL := 3.55
+const SCIENTIST_ARRIVAL := 3.85
 const MAX_START := Vector2(-36, 337)
 const MAX_STOP := Vector2(232, 337)
 const SCIENTIST_START := Vector2(16, 340)
 const SCIENTIST_STOP := Vector2(284, 340)
 const CAMERA_ZOOM := 1.28
 const CAMERA_DURATION := 1.35
-const DIALOGUE_START := 6.18
+const DIALOGUE_START := 4.40
 const FADE_START := Shrinking.SHRINK_END + 0.3
 const FADE_DURATION := 0.85
 
@@ -45,6 +46,7 @@ var sequence_start := -1.0
 var sequence_camera_position := VIEW * 0.5
 var sequence_camera_zoom := 1.0
 var ending_black: ColorRect
+var skip_hint: Label
 
 
 func _ready() -> void:
@@ -78,6 +80,15 @@ func _ready() -> void:
 func _build_overlay() -> void:
 	alarm_tint = $CinematicOverlay/RedAlarm
 	pause_label = $CinematicOverlay/Pause
+	skip_hint = _label("", Vector2(486, 336), 8)
+	skip_hint.add_theme_color_override("font_outline_color", Color("091725"))
+	skip_hint.add_theme_constant_override("outline_size", 4)
+	$CinematicOverlay.add_child(skip_hint)
+	GameInput.prompts_changed.connect(_update_skip_hint)
+	_update_skip_hint()
+
+func _update_skip_hint() -> void:
+	GameInput.label_hint(skip_hint, -1, "cancel", "BACKSPACE  PULAR", "PULAR")
 
 
 func _label(value: String, at: Vector2, font_size: int) -> Label:
@@ -95,6 +106,7 @@ func _process(delta: float) -> void:
 	if not paused:
 		seek(elapsed + delta)
 		dialogue.tick(delta)
+	skip_hint.visible = elapsed >= 0.55 and not finished and (sequence_start < 0.0 or elapsed - sequence_start < FADE_START)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -104,13 +116,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		restart()
 	elif event.keycode == KEY_SPACE:
 		set_paused(not paused)
-	elif event.keycode in [KEY_ENTER, KEY_KP_ENTER] and not paused:
+	elif event.keycode == KEY_BACKSPACE:
+		_finish_intro()
+	elif event.is_action_pressed("ui_accept") and not paused:
 		dialogue.advance()
+	else: return
 	get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+	if event is InputEventJoypadButton and event.pressed:
+		if event.is_action_pressed("ui_cancel"): _finish_intro()
+		elif event.is_action_pressed("ui_accept") and not paused: dialogue.advance()
+		elif event.button_index == JOY_BUTTON_START: set_paused(not paused)
+		elif event.button_index == JOY_BUTTON_BACK: restart()
+		else: return
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if not paused and dialogue.active:
 			dialogue.advance()
 			get_viewport().set_input_as_handled()
@@ -198,13 +220,22 @@ func _update_machine_camera() -> void:
 func _update_ending() -> void:
 	if sequence_start < 0.0:
 		ending_black.color.a = 0.0
+		ending_black.material = null
 		return
 	var time := elapsed - sequence_start
-	ending_black.color.a = smoothstep(FADE_START, FADE_START + FADE_DURATION, time)
-	if time >= FADE_START + FADE_DURATION and not finished:
-		finished = true
-		intro_finished.emit()
-		get_tree().call_deferred("change_scene_to_file", "res://scenes/gameplay/micro_arena.tscn")
+	SceneFx.paint(ending_black, smoothstep(FADE_START, FADE_START + FADE_DURATION, time), SceneFx.PIXELATE)
+	if time >= FADE_START + FADE_DURATION: _finish_intro()
+
+func _finish_intro() -> void:
+	if finished: return
+	finished = true
+	SceneFx.paint(ending_black, 1.0, SceneFx.PIXELATE)
+	intro_finished.emit()
+	_enter_micro_arena.call_deferred()
+
+func _enter_micro_arena() -> void:
+	if get_tree().change_scene_to_file("res://scenes/gameplay/micro_arena.tscn") == OK:
+		SceneFx.reveal_next(SceneFx.IRIS, Color.BLACK)
 
 
 func _stage_actor(actor: Node2D, start_time: float, end_time: float,
@@ -243,6 +274,9 @@ func _draw_ambience() -> void:
 	ambience.draw_polyline(wave, cyan, 1.0)
 	var sweep := 90.0 + fmod(elapsed * 25.0, 99.0)
 	ambience.draw_line(Vector2(sweep, 148), Vector2(sweep, 185), Color(0.55, 1.0, 1.0, 0.55))
+	if sequence_start < 0:
+		ambience.draw_rect(Rect2(91, 149, 58, 10), Color("1f1a3f"))
+		ambience.draw_string(PIXEL_FONT, Vector2(94, 157), "ALERTA", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color("ffbe77"))
 	# Scrolling data on the side of the main monitor.
 	for line in range(8):
 		var row := (line + int(elapsed * 3.0)) % 8

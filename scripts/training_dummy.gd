@@ -76,4 +76,4 @@ func _draw() -> void:
 		var key := "E" if nearby.player_id == 0 else "U"
 		var text := "%s: CARGA %d%%" % [key,50 if nearby.energy >= 100 else 100]
 		draw_rect(Rect2(-64,12,128,16),Color("102346"))
-		draw_string(FONT,Vector2(-58,24),text,HORIZONTAL_ALIGNMENT_LEFT,-1,8,Color("b2edff"))
+		GameInput.draw_hint(self, Vector2(-58,24), nearby.player_id, "interact", text, "CARGA %d%%" % (50 if nearby.energy >= 100 else 100))

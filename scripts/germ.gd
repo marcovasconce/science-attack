@@ -52,7 +52,7 @@ func take_hit(damage: int, direction: float) -> void:
 	hp-=damage
 	$Health.value=maxi(0,hp)
 	stun=0.4
-	position.x+=direction*18
+	move_and_collide(Vector2(direction*18,0))
 	if hp<=0:
 		dead=true
 		arena.germ_defeated(position)

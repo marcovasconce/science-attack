@@ -93,8 +93,7 @@ for i,(x,y) in enumerate([(2580,222),(4160,220),(6590,242)]):
     node(f'Record{i}',position=f'Vector2({x},{y})',z_index=-2)
     node('EnergyFlask','Sprite2D',f'Record{i}',texture='ExtResource("flask")',scale='Vector2(1.2,1.2)',modulate='Color(0.6,0.75,2.5,1)')
 
-lines += ['\n[node name="ExitElevator" parent="." instance=ExtResource("exit_cabin")]','position = Vector2(6900,316)','script = ExtResource("exit_lift")']
-label('Destination','ESTUFA',-24,-226,'ExitElevator',8)
+lines += ['\n[node name="ExitElevator" parent="." instance=ExtResource("exit_cabin")]','position = Vector2(6900,316)','script = ExtResource("exit_lift")','next_scene_path = "res://scenes/gameplay/lower_lab_stage.tscn"','travels_down = true']
 
 node('Inventory','CanvasLayer',layer=9)
 node('Hint','Label','Inventory',offset_left=258,offset_top=126,offset_right=460,offset_bottom=152,theme_override_font_sizes__font_size=14,theme_override_colors__font_outline_color='Color(0.02,0.06,0.1,1)',theme_override_constants__outline_size=4,mouse_filter=2)

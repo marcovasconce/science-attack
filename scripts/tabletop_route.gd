@@ -62,6 +62,7 @@ var cleaner_materials: Array[ShaderMaterial] = []
 var hint_target: Node2D
 @onready var arena = get_parent()
 @onready var hint: Label = $Inventory/Hint
+@onready var controller_prompts = get_node("/root/GameInput")
 
 func _ready() -> void:
 	_build_result()
@@ -268,6 +269,7 @@ func _update_water(dt: float) -> void:
 
 func turn_valve(index: int, player) -> bool:
 	if index < 0 or index >= 3 or step != Step.PIPES or not _can_act(player,VALVE_POINTS[index],48): return false
+	arena.get_node("/root/GameAudio").effect("lever", VALVE_POINTS[index])
 	valves[index] = (valves[index]+1)%4
 	return true
 
@@ -316,15 +318,17 @@ func _collect_pickups() -> void:
 			_pickup_feedback("+ Energia",RECORD_POINTS[i])
 		if step == Step.SAMPLE and _can_act(player,SAMPLE_POINT,28):
 			sample_taken = true
+			arena.clean_sample = true
+			arena.get_node("/root/GameAudio").effect("jar")
 			step = Step.EXIT
 			_set_limit(7180)
-			save_checkpoint("CAMINHO DA ESTUFA",Vector2(6460,290))
-			arena.encounter.say("next_chapter",["Frasco guardado! Vamos juntos até a estufa."],step)
+			save_checkpoint("DESCIDA AO LABORATÓRIO",Vector2(6460,290))
+			arena.encounter.say("next_chapter",["Frasco guardado! Desçam pelo elevador e me encontrem lá embaixo!"],step)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo() or arena.controls_locked or not powered: return
 	for player in arena.players:
-		if not player.ai_controlled and event.is_action_pressed("p%d_interact" % player.player_id) and try_action(player):
+		if not player.ai_controlled and controller_prompts.event_for(event, player.player_id, "interact") and try_action(player):
 			get_viewport().set_input_as_handled()
 			return
 
@@ -428,7 +432,8 @@ func _update_hint() -> void:
 		if not powered and is_instance_valid(arena.puzzle) and arena.puzzle.started:
 			var puzzle = arena.puzzle
 			if puzzle.constructed and not puzzle.activating and not puzzle.finished: options.append([puzzle.LEVER_POINT,48,"Puxar"])
-			elif not puzzle.constructed and not puzzle.needs_salvage(): options.append([puzzle.BUILD_POINT,48,"Montar"])
+			elif not puzzle.constructed and not puzzle.needs_salvage() and not puzzle.is_building(puzzle.builder):
+				options.append([puzzle.BUILD_POINT,48,"Montar"])
 		if step == Step.PIPES:
 			for point in VALVE_POINTS: options.append([point,48,"Girar"])
 			if not suction_started: options.append([PUMP_POINT,34,""])
@@ -440,7 +445,9 @@ func _update_hint() -> void:
 			nearest = distance
 			hint_target = player
 			var key := "E" if player.player_id == 0 else "U"
-			hint.text = ("Segure %s para montar" % key if option[2] == "Montar" else "%s  %s" % [key,option[2]]).strip_edges()
+			var caption: String = "Segure para montar" if option[2] == "Montar" else option[2]
+			var keyboard := ("Segure %s para montar" % key if option[2] == "Montar" else "%s  %s" % [key, option[2]]).strip_edges()
+			controller_prompts.label_hint(hint, player.player_id, "interact", keyboard, caption)
 	if hint_target != null: hint.show()
 
 func _sync_visuals(dt: float) -> void:
@@ -497,7 +504,7 @@ func _sync_steam_sprites() -> void:
 func save_checkpoint(label: String, at: Vector2) -> void:
 	var party: Array = []
 	for player in arena.players:
-		party.append({"weapon":player.equipped_weapon,"hp":maxi(40,player.hp),"max_hp":player.max_hp,"energy":player.energy,"healing_flasks":maxi(1,player.healing_flasks),"flask_heal_amount":player.flask_heal_amount,"ai_controlled":player.ai_controlled})
+		party.append({"weapon":player.equipped_weapon,"hp":maxi(40,player.hp),"max_hp":player.max_hp,"energy":player.energy,"healing_flasks":maxi(1,player.healing_flasks),"flask_heal_amount":player.flask_heal_amount,"ai_controlled":player.ai_controlled,"pieces":arena.pieces})
 	get_tree().set_meta(CHECKPOINT_META,{"name":label,"at":at,"party":party,"step":step,"drained":drained,"passage":passage_open,"batteries":batteries.duplicate(),"supplies":supplies.duplicate(),"records":records.duplicate(),"sample":sample_taken,"ambushes":ambushes.duplicate(),"seen":arena.encounter.seen.duplicate()})
 	checkpoint_name = label
 	checkpoint_age = 3
@@ -513,6 +520,7 @@ func restore_checkpoint(data: Dictionary) -> void:
 	supplies.assign(data["supplies"])
 	ambushes.assign(data["ambushes"])
 	sample_taken = data["sample"]
+	arena.clean_sample = sample_taken
 	records.assign(data.get("records",[false,false,false]))
 	arena.encounter.seen = data["seen"].duplicate()
 	opening_age = 2
@@ -535,21 +543,18 @@ func restore_checkpoint(data: Dictionary) -> void:
 	_sync_visuals(1)
 
 func _build_result() -> void:
+	var skin = preload("res://scripts/menu_button.gd")
 	var layer := CanvasLayer.new()
 	layer.layer = 80
 	add_child(layer)
 	result_panel = Panel.new()
 	result_panel.position = Vector2(90,78)
 	result_panel.size = Vector2(460,220)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("102346")
-	style.border_color = Color("76cbd3")
-	style.set_border_width_all(3)
-	result_panel.add_theme_stylebox_override("panel",style)
+	result_panel.add_theme_stylebox_override("panel", skin.panel())
 	layer.add_child(result_panel)
 	var label := Label.new()
 	label.position = Vector2(24,22)
-	label.text = "BOA, EQUIPE!\n\nO frasco está limpo.\nVamos cuidar da estufa!\n\nA aventura continua..."
+	label.text = "BOA, EQUIPE!\n\nO frasco está limpo.\nTibúrcio espera lá embaixo!\n\nSigam para o elevador."
 	label.add_theme_font_override("font",FONT)
 	label.add_theme_font_size_override("font_size",10)
 	label.add_theme_constant_override("line_spacing",7)
@@ -566,6 +571,7 @@ func _build_result() -> void:
 	replay.pressed.connect(_replay)
 	result_panel.add_child(replay)
 	for button in [explore,replay]:
+		skin.apply(button)
 		button.add_theme_font_override("font",FONT)
 		button.add_theme_font_size_override("font_size",8)
 		button.custom_minimum_size = Vector2(185,30)
@@ -575,3 +581,4 @@ func _replay() -> void:
 	for key in [CHECKPOINT_META,RETRY_META]:
 		if get_tree().has_meta(key): get_tree().remove_meta(key)
 	get_tree().reload_current_scene()
+

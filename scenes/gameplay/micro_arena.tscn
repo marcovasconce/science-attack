@@ -27,6 +27,8 @@
 [ext_resource type="PackedScene" path="res://scenes/environment/cooperative_elevator.tscn" id="elevator"]
 [ext_resource type="PackedScene" path="res://scenes/environment/elevator_bay.tscn" id="elevator_bay"]
 
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
+
 [sub_resource type="StyleBoxFlat" id="bubble"]
 bg_color = Color(0.063, 0.137, 0.275, 1)
 border_width_left = 3
@@ -217,6 +219,8 @@ filter_clip = true
 y_sort_enabled = true
 texture_filter = 1
 script = ExtResource("1")
+
+[node name="PauseMenu" parent="." instance=ExtResource("pause_menu")]
 
 [node name="Actors" type="Node2D" parent="." unique_id=30541239]
 y_sort_enabled = true
@@ -589,10 +593,10 @@ width = 1.0
 default_color = Color(0.4, 0.8, 0.95, 0.4)
 
 [node name="Count" type="Label" parent="BuildSite" unique_id=1728031484]
-offset_left = 516.0
-offset_top = 193.0
-offset_right = 564.0
-offset_bottom = 205.0
+offset_left = 546.0
+offset_top = 307.0
+offset_right = 594.0
+offset_bottom = 319.0
 theme_override_font_sizes/font_size = 8
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "0 / 8"

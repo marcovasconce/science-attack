@@ -1,5 +1,5 @@
 extends Node2D
-## All germ art is sampled on a fixed logical pixel grid, then displayed at 2x.
+## Germ art uses a logical pixel grid with optional extra samples for the title screen.
 const Pose = preload("res://scripts/pixel_germ_pose.gd")
 var canvas: SubViewport
 var pose: Node2D
@@ -7,15 +7,16 @@ var display: Sprite2D
 var frame := -1
 var motion_sample := -1
 
-func setup(variant: String) -> void:
+func setup(variant: String, samples := 1) -> void:
 	canvas = SubViewport.new()
-	canvas.size = Vector2i(48,56)
+	canvas.size = Vector2i(48,56) * samples
 	canvas.transparent_bg = true
 	canvas.disable_3d = true
 	canvas.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
 	add_child(canvas)
 	pose = Pose.new()
 	pose.variant = variant
+	pose.scale = Vector2.ONE * samples
 	var shader := Shader.new()
 	shader.code = "shader_type canvas_item; render_mode unshaded; void fragment(){if(COLOR.a<0.8){discard;} COLOR.a=1.0;}"
 	var material := ShaderMaterial.new()
@@ -25,7 +26,7 @@ func setup(variant: String) -> void:
 	display = Sprite2D.new()
 	display.texture = canvas.get_texture()
 	display.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	display.scale = Vector2(2,2)
+	display.scale = Vector2(2,2) / samples
 	display.position = Vector2(0,-48)
 	add_child(display)
 	sync(0,false)

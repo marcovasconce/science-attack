@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/elevator_pad.gd" id="pad"]
 [ext_resource type="Texture2D" path="res://assets/environment/cooperative_elevator.png" id="art"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="font"]
+[ext_resource type="Script" path="res://scripts/elevator_shaft_details.gd" id="shaft_details"]
 
 [sub_resource type="AtlasTexture" id="cabin_art"]
 atlas = ExtResource("art")
@@ -31,6 +32,9 @@ color = Color(0.20, 0.36, 0.43, 1)
 [node name="RightRail" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(109,-316,116,-316,116,-18,109,-18)
 color = Color(0.20, 0.36, 0.43, 1)
+
+[node name="ShaftDetails" type="Node2D" parent="."]
+script = ExtResource("shaft_details")
 
 [node name="Cabin" type="Node2D" parent="."]
 

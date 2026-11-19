@@ -1,0 +1,173 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/hive_bubble_puzzle.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/third_party/alejandrohaibi/bubble.png" id="bubble"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="font"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_064.png" id="bar"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_035.png" id="deck"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_074.png" id="base"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_084.png" id="arrow"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_099.png" id="launcher"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_053.png" id="goal"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_085.png" id="bracket"]
+[ext_resource type="Texture2D" path="res://assets/third_party/cartoon/industrial/PNG/Default size/platformIndustrial_086.png" id="receiver"]
+
+[sub_resource type="AtlasTexture" id="Barrier"]
+atlas = ExtResource("bar")
+region = Rect2(0, 0, 70, 20)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Deck"]
+atlas = ExtResource("deck")
+region = Rect2(0, 0, 70, 22)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Arrow"]
+atlas = ExtResource("arrow")
+region = Rect2(11, 4, 48, 60)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Lamp"]
+atlas = ExtResource("goal")
+region = Rect2(10, 30, 50, 40)
+filter_clip = true
+
+[sub_resource type="AtlasTexture" id="Ball"]
+atlas = ExtResource("bubble")
+region = Rect2(14, 14, 38, 38)
+filter_clip = true
+
+[node name="BubblePuzzle" type="Node2D"]
+script = ExtResource("script")
+z_index = -1
+
+[node name="LauncherStand" type="Sprite2D" parent="."]
+position = Vector2(-166, -35)
+scale = Vector2(0.44, 1.48)
+texture = ExtResource("bracket")
+self_modulate = Color(0.59, 0.77, 0.88, 1)
+
+[node name="LauncherFoot" type="Sprite2D" parent="."]
+position = Vector2(-166, 23)
+scale = Vector2(0.87, 0.66)
+texture = SubResource("Deck")
+
+[node name="Launcher" type="Sprite2D" parent="."]
+position = Vector2(-165, -93)
+scale = Vector2(0.62, 0.74)
+texture = ExtResource("launcher")
+rotation = -1.5707963
+
+[node name="Nozzle" type="Marker2D" parent="."]
+position = Vector2(-140, -92)
+
+[node name="LowBarrier" type="Sprite2D" parent="."]
+position = Vector2(-15, -49)
+scale = Vector2(0.92, 0.9)
+texture = SubResource("Barrier")
+rotation = 1.5707963
+
+[node name="LowSupport" type="Sprite2D" parent="."]
+position = Vector2(-15, 8)
+scale = Vector2(0.31, 0.89)
+texture = ExtResource("bracket")
+
+[node name="HighBarrier" type="Sprite2D" parent="."]
+position = Vector2(94, -138)
+scale = Vector2(0.89, 0.9)
+texture = SubResource("Barrier")
+rotation = 1.5707963
+
+[node name="HighSupport" type="Sprite2D" parent="."]
+position = Vector2(94, -175)
+scale = Vector2(0.22, 0.3)
+texture = ExtResource("bracket")
+
+[node name="Cup" type="Marker2D" parent="."]
+position = Vector2(127, -70)
+
+[node name="Receiver" type="Sprite2D" parent="."]
+position = Vector2(126, -70)
+scale = Vector2(0.32, 0.44)
+rotation = 1.5707963
+texture = ExtResource("receiver")
+
+[node name="GoalLight" type="Sprite2D" parent="."]
+position = Vector2(126, -92)
+scale = Vector2(0.38, 0.38)
+texture = SubResource("Lamp")
+self_modulate = Color(0.45, 0.55, 0.56, 1)
+
+[node name="SpringA" type="Node2D" parent="."]
+position = Vector2(-75, 0)
+
+[node name="Body" type="Sprite2D" parent="SpringA"]
+position = Vector2(0, 0)
+scale = Vector2(0.66, 0.58)
+texture = ExtResource("base")
+
+[node name="Deck" type="Sprite2D" parent="SpringA"]
+position = Vector2(0, -23)
+scale = Vector2(0.78, 0.46)
+texture = SubResource("Deck")
+
+[node name="Arrow" type="Sprite2D" parent="SpringA"]
+position = Vector2(-24, -8)
+scale = Vector2(0.31, 0.25)
+texture = SubResource("Arrow")
+z_index = 2
+
+[node name="BoostArrow" type="Sprite2D" parent="SpringA"]
+position = Vector2(-24, -20)
+scale = Vector2(0.31, 0.25)
+texture = SubResource("Arrow")
+z_index = 2
+self_modulate = Color(0.57, 0.93, 1, 1)
+
+[node name="Contact" type="Marker2D" parent="SpringA"]
+position = Vector2(0, -37)
+
+[node name="SpringB" type="Node2D" parent="."]
+position = Vector2(45, 0)
+
+[node name="Body" type="Sprite2D" parent="SpringB"]
+position = Vector2(0, 0)
+scale = Vector2(0.66, 0.58)
+texture = ExtResource("base")
+
+[node name="Deck" type="Sprite2D" parent="SpringB"]
+position = Vector2(0, -23)
+scale = Vector2(0.78, 0.46)
+texture = SubResource("Deck")
+
+[node name="Arrow" type="Sprite2D" parent="SpringB"]
+position = Vector2(-24, -8)
+scale = Vector2(0.31, 0.25)
+texture = SubResource("Arrow")
+z_index = 2
+
+[node name="BoostArrow" type="Sprite2D" parent="SpringB"]
+position = Vector2(-24, -20)
+scale = Vector2(0.31, 0.25)
+texture = SubResource("Arrow")
+z_index = 2
+self_modulate = Color(0.57, 0.93, 1, 1)
+
+[node name="Contact" type="Marker2D" parent="SpringB"]
+position = Vector2(0, -37)
+
+[node name="Bubble" type="Sprite2D" parent="."]
+position = Vector2(0, 0)
+scale = Vector2(0.62, 0.62)
+texture = SubResource("Ball")
+visible = false
+z_index = 2
+self_modulate = Color(1.1, 1.2, 1.25, 1)
+
+[node name="InteractHint" type="Label" parent="."]
+visible = false
+z_index = 15
+theme_override_fonts/font = ExtResource("font")
+theme_override_font_sizes/font_size = 9
+theme_override_constants/outline_size = 5
+theme_override_colors/font_outline_color = Color(0.02, 0.06, 0.09, 1)
+mouse_filter = 2

@@ -37,6 +37,13 @@ func run() -> void:
 	check("construction_bolts" in site.get_node("Pieces/Piece0").texture.resource_path, "Crate rewards must render as screws")
 	arena.interact(player, 1.4)
 	check(arena.get_node("Bridge/Deck0").visible and not arena.get_node("Bridge/Deck1").visible, "First section installs from the near bank")
+	Input.action_press("p0_interact")
+	player._physics_process(0)
+	check(player.sprite.animation == &"build" and player.facing > 0,"The bridge uses the construction animation facing the sockets")
+	Input.action_release("p0_interact")
+	player._physics_process(0)
+	check(not arena.is_assembling(player),"Releasing stops the construction animation immediately")
+	check(arena.pieces == 1,"The parts are reserved before the bridge completes")
 	await physics_frame
 	player.position = Vector2(550, 250)
 	check(player.move_and_collide(Vector2(260, 0)) != null, "Partial bridge still prevents crossing")

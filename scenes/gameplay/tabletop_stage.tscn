@@ -16,6 +16,8 @@
 [ext_resource type="PackedScene" path="res://scenes/environment/tabletop_generator.tscn" id="generator"]
 [ext_resource type="PackedScene" path="res://scenes/environment/tabletop_route.tscn" id="route"]
 
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="pause_menu"]
+
 [sub_resource type="RectangleShape2D" id="horizontal"]
 size = Vector2(7240,20)
 [sub_resource type="RectangleShape2D" id="vertical"]
@@ -38,6 +40,8 @@ border_color = Color(0.329,0.537,0.839,1)
 y_sort_enabled = true
 texture_filter = 1
 script = ExtResource("stage")
+
+[node name="PauseMenu" parent="." instance=ExtResource("pause_menu")]
 
 [node name="Environment" type="Node2D" parent="."]
 z_index = -20
@@ -192,4 +196,4 @@ offset_top = 16.0
 theme_override_fonts/font = ExtResource("font")
 theme_override_font_sizes/font_size = 8
 theme_override_constants/line_spacing = 12
-text = "         P1              P2\nMover    WASD            Setas\nPular    Espaço          K\nGolpe    F               J\nDesviar  Shift           L\nUsar     E               U\nCurar    R               O\nEspecial Q               I\n\nEnter: P2 entrar/sair   |   F1: fechar\nF2: tentar de novo"
+text = "         MAX             AMANDA\nMover    WASD            Setas\nPular    Espaço          K\nGolpe    F               J\nDesviar  Shift           L\nUsar     E               U\nCurar    R               O\nEspecial Q               I\n\nEnter: entrar/sair   |   F1: fechar\nF2: tentar de novo"

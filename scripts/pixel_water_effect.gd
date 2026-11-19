@@ -5,10 +5,21 @@ const SPLASH = preload("res://assets/animations/soap_water_splash.tres")
 var mode := ""
 var time := 0.0
 var beam_length := 560.0
+var pulses: Array = []
+var use_arcade_effects := false
+const ARCADE_BURST = preload("res://assets/third_party/ansimuz_hive/explosion-3.png")
+const ARCADE_POP = preload("res://assets/third_party/ansimuz_hive/explosion-1.png")
+const ARCADE_BUBBLE = preload("res://assets/third_party/alejandrohaibi/bubble.png")
 
 func _draw() -> void:
-	if mode == "bubbles2": _beam()
-	elif mode == "brush2": _splash()
+	if mode == "bubbles2":
+		if use_arcade_effects: _arcade_beam()
+		else: _beam()
+	elif mode == "brush2":
+		if use_arcade_effects: _arcade_burst(Vector2(160, 96), time - 0.5, 1.2)
+		else: _splash()
+	elif mode == "solar": _solar()
+	elif mode == "nova": _nova()
 
 func bubble(at: Vector2, radius: float) -> void:
 	var ring := PackedVector2Array()
@@ -58,6 +69,60 @@ func _splash() -> void:
 		var radius := 12+age*(44+i%4*6)
 		var at := origin+Vector2(cos(a)*radius,sin(a)*radius*0.22-8-age*(14+i%5*5))
 		bubble(at,1+i%2)
+
+func _solar() -> void:
+	for i in pulses.size():
+		var pulse: Vector2 = pulses[i]
+		var age := time - pulse.x
+		if age < 0.0 or age >= 0.48: continue
+		var origin := Vector2(160 + pulse.y * 0.5, 96)
+		if use_arcade_effects:
+			_arcade_burst(origin, age, 1.0 + i * 0.17)
+			continue
+		var texture: AtlasTexture = SPLASH.get_frame_texture("effect", mini(5, int(age / 0.08)))
+		var size := (texture.region.size * Vector2(0.14, 0.15 + i * 0.035)).round()
+		draw_texture_rect(texture, Rect2((origin - Vector2(size.x * 0.5, size.y)).round(), size), false, Color("ffc16f"))
+		for j in 6:
+			var angle := float(j) * TAU / 6
+			var at := origin + Vector2(cos(angle) * age * 93, sin(angle) * age * 32 - (28 + j * 3) * sin(age * PI))
+			bubble(at, 2 + j % 2)
+
+func _nova() -> void:
+	var nozzle := Vector2(40, 54)
+	if time < 0.30:
+		bubble(nozzle + Vector2(6, 0), 2.0 + time * 32.0)
+		return
+	for pulse in pulses:
+		var age: float = time - pulse.x
+		if age < 0 or age >= 0.18: continue
+		if use_arcade_effects:
+			draw_texture_rect_region(ARCADE_POP, Rect2(nozzle - Vector2(14, 14), Vector2(28, 28)), Rect2(floorf(age / 0.03) * 32, 0, 32, 32), Color("edbdff"))
+			continue
+		var texture: AtlasTexture = SPLASH.get_frame_texture("effect", mini(5, int(age / 0.03)))
+		var size := (texture.region.size * 0.08).round()
+		draw_set_transform(nozzle, PI * 0.5)
+		draw_texture_rect(texture, Rect2(Vector2(-size.x * 0.5, -size.y), size), false, Color("eeb0ff"))
+		draw_set_transform(Vector2.ZERO)
+
+func _arcade_burst(at: Vector2, age: float, size: float) -> void:
+	if age < 0.0 or age >= 0.5: return
+	var frame := mini(9, int(age * 20.0))
+	var dims := Vector2(94, 56) * size
+	draw_texture_rect_region(ARCADE_BURST, Rect2(at - dims * Vector2(0.5, 0.83), dims), Rect2(frame * 128, 0, 128, 80))
+
+func _arcade_beam() -> void:
+	var nozzle := Vector2(40, 54)
+	var length := maxf(0.0, beam_length * 0.5)
+	if time < 0.25:
+		var rim := Vector2.ONE * (6 + time * 48)
+		draw_texture_rect_region(ARCADE_BUBBLE, Rect2(nozzle - rim * 0.5, rim), Rect2(14, 14, 38, 38), Color("9dedff"))
+		return
+	if length <= 1.0: return
+	for i in 14:
+		var phase := fposmod((time - 0.25) * 2.7 + float(i) / 14.0, 1.0)
+		var center := nozzle + Vector2(phase * length, sin(time * 16.0 + i * 1.6) * 9.0)
+		var rim := Vector2.ONE * minf(length, 18.0 + i % 4 * 3.0)
+		draw_texture_rect_region(ARCADE_BUBBLE, Rect2(center - rim * 0.5, rim), Rect2(14, 14, 38, 38), Color("8ceeff"))
 
 func _water_ripple(origin: Vector2, age: float) -> void:
 	# Same 220-world-pixel reach, with a low, breaking sheet of water and foam.

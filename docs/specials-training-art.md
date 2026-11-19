@@ -19,7 +19,7 @@ Prompt usado:
 
 - Imagem: `assets/animations/training_robot.png`.
 - Região do AtlasTexture: `Rect2(356, 293, 633, 670)`, em `training_robot.tres`.
-- Referência fornecida: `codex-clipboard-b3af5f93-ffb4-4f54-ab68-00aa2bcf990a.png`.
+- Referência fornecida: (imagem anexada).
 - Renderizado com 36 × 42 pixels lógicos, ampliados 2×. A ferramenta isolou o robô; a aparência final é uma interpretação da referência.
 - Cena editável: `scenes/actors/training_dummy.tscn`, instanciada em `Actors/TrainingDummy` na arena, posição (2100, 266).
 

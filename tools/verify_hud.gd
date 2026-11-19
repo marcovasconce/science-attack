@@ -24,6 +24,17 @@ func run() -> void:
 	check(InputMap.action_get_events("p0_heal")[0].physical_keycode == KEY_R, "P1 heals with R")
 	check(InputMap.action_get_events("restart")[0].physical_keycode == KEY_F2, "Restart uses F2")
 	check(InputMap.action_get_events("p1_heal")[0].physical_keycode == KEY_O, "P2 healing key")
+	for binding in [[KEY_LEFT,"p1_left"],[KEY_RIGHT,"p1_right"],[KEY_UP,"p1_up"],[KEY_DOWN,"p1_down"]]:
+		var arrow := InputEventKey.new()
+		arrow.physical_keycode = binding[0]
+		arrow.pressed = true
+		Input.parse_input_event(arrow)
+		Input.flush_buffered_events()
+		check(Input.is_action_pressed(binding[1]) and Input.get_vector("p0_left","p0_right","p0_up","p0_down") == Vector2.ZERO, "P2 arrow reaches only P2")
+		var release := arrow.duplicate() as InputEventKey
+		release.pressed = false
+		Input.parse_input_event(release)
+		Input.flush_buffered_events()
 	check(not hud.two_players and secondary.compact, "AI uses compact companion row")
 	check(primary.position.y < secondary.position.y, "Solo stacks its two portraits")
 	check(secondary.get_node("Name").text.begins_with("IA"), "Companion identified as AI")
@@ -84,6 +95,15 @@ func run() -> void:
 	check(player.down and not player.use_healing_flask() and player.healing_flasks == 2, "Flasks do not replace cooperative revival")
 	hud._process(0.0)
 	check(primary.get_node("Health").value == 0 and primary.get_node("HealthValue").text == "CAÍDO", "Downed state is visible")
+	player.position = Vector2(170,250)
+	partner.position = Vector2(950,250)
+	arena._process(0)
+	check(arena.get_node("Camera2D").position.x == 950 and player.position.x == 170,"Camera follows the survivor while the downed player stays in place")
+	await create_timer(1.0).timeout
+	var last_death_frame: int = player.sprite.sprite_frames.get_frame_count("death") - 1
+	check(not player.sprite.is_playing() and player.sprite.frame == last_death_frame,"Death ends on its last frame")
+	player._physics_process(0.016)
+	check(not player.sprite.is_playing() and player.sprite.frame == last_death_frame,"Updating a downed player does not replay death")
 	for two in [true, false]:
 		partner.ai_controlled = not two
 		hud._process(0.0)

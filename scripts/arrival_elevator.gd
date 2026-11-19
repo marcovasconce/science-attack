@@ -1,5 +1,6 @@
 extends Node2D
 signal opened
+@export var show_shaft := false
 const FADE_TIME := 0.8
 const OPEN_START := 1.0
 const OPEN_TIME := 1.4
@@ -14,6 +15,7 @@ func _ready() -> void:
 	$Shaft.hide()
 	$LeftRail.hide()
 	$RightRail.hide()
+	$ShaftDetails.visible = show_shaft
 	$Transition/Black/Message.hide()
 	$Cabin/LeftPad.occupied = true
 	$Cabin/RightPad.occupied = true
@@ -29,7 +31,7 @@ func ai_boarding_destination(_player) -> Variant:
 func _physics_process(dt: float) -> void:
 	if arrived: return
 	age += dt
-	black.color.a = 1.0-smoothstep(0.0,FADE_TIME,age)
+	SceneFx.paint(black, 1.0-smoothstep(0.0,FADE_TIME,age), SceneFx.WIPE, Vector2.DOWN)
 	doors.openness = smoothstep(OPEN_START,OPEN_START+OPEN_TIME,age)
 	if age>=OPEN_START+OPEN_TIME:
 		arrived = true

@@ -2,6 +2,7 @@ extends RigidBody2D
 ## Intact -> dented -> four-frame breakup; collisions stop on the final hit.
 const BREAK_DURATION := 0.44
 @export var hp := 32
+@export var drops_salvage := true
 var broken := false
 var break_age := 0.0
 var hit_age := 0.0
@@ -59,7 +60,7 @@ func take_hit(damage: int, direction: float, player) -> void:
 	set_deferred("collision_mask", 0)
 	$Feet.set_deferred("disabled", true)
 	sample_visual()
-	arena.collect_parts(3, position)
+	if drops_salvage: arena.collect_parts(3, position)
 	arena.tutorial.record_action("crate", player)
 	for chunk in $Debris.get_children():
 		chunk.reparent(arena.get_node("Debris"))

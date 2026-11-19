@@ -179,7 +179,7 @@ func _refresh_effects() -> void:
 func _draw_sleep_signs() -> void:
 	if not active or elapsed < POWER_START:
 		return
-	var font := ThemeDB.fallback_font
+	var font := preload("res://assets/fonts/PressStart2P-Regular.ttf")
 	for index in range(2):
 		for letter in range(3):
 			var phase := fposmod((elapsed - POWER_START) / 1.65 + letter / 3.0 + index * 0.15, 1.0)

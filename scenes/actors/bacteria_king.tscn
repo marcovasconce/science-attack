@@ -1,0 +1,15 @@
+[gd_scene format=3]
+[ext_resource type="Script" path="res://scripts/bacteria_king.gd" id="script"]
+[ext_resource type="Texture2D" path="res://assets/enemies/king_captive_animated_v3.png" id="king"]
+
+[node name="BacteriaKing" type="Node2D"]
+texture_filter = 1
+script = ExtResource("script")
+[node name="Hover" type="Node2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="Hover"]
+position = Vector2(0,-106)
+scale = Vector2(2,2)
+texture = ExtResource("king")
+hframes = 3
+vframes = 2
+
